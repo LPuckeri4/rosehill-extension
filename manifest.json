@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Price Multiplier with Google Search",
+  "version": "1.0",
+  "description": "Multiplies prices on Rosehill and stores Google search prices for each product model.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://rosehillonline.ca/*",
+    "https://www.google.com/search*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://rosehillonline.ca/*"],
+      "js": ["content.js"]
+    },
+    {
+      "matches": ["https://www.google.com/search*"],
+      "js": ["google_content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Clear Prices"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
