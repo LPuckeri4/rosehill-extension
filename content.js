@@ -1,4 +1,3 @@
-// Function to format numbers to two decimal places
 function formatPrice(price) {
   return price.toFixed(2);
 }
@@ -6,11 +5,11 @@ function formatPrice(price) {
 // Function to multiply and display prices next to original prices
 function applyPriceMultiplier() {
   document.querySelectorAll(".NumberPart").forEach((priceElement) => {
-    const priceText = priceElement.textContent.trim();
+    const priceText = priceElement.textContent.trim().replace(/,/g, ""); // Remove commas
     const price = parseFloat(priceText);
 
     if (!isNaN(price)) {
-      const updatedPrice = price * 1.3;
+      const updatedPrice = price * 1.310796;
 
       const updatedPriceElement = document.createElement("span");
       updatedPriceElement.textContent = ` ($${formatPrice(updatedPrice)})`;
