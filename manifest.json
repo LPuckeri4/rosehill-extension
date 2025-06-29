@@ -5,16 +5,16 @@
   "description": "Multiplies prices on Rosehill and stores Google search prices for each product model.",
   "permissions": ["storage"],
   "host_permissions": [
-    "https://rosehillonline.ca/*",
+    "https://*.rosehillonline.ca/*",
     "https://www.google.com/search*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://rosehillonline.ca/*"],
+      "matches": ["https://*.rosehillonline.ca/*"],
       "js": ["content.js"]
     },
     {
-      "matches": ["https://rosehillonline.ca/Event/LotDetails/*"],
+      "matches": ["https://*.rosehillonline.ca/Event/LotDetails/*"],
       "js": ["content2.js"]
     },
     {
@@ -22,6 +22,7 @@
       "js": ["google_content.js"]
     }
   ],
+
   "action": {
     "default_popup": "popup.html",
     "default_title": "Clear Prices"
