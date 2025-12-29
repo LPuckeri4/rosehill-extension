@@ -159,3 +159,86 @@ document.addEventListener("visibilitychange", () => {
     displayGooglePrice();
   }
 });
+
+// MutationObserver to handle dynamically loaded listings (infinite scroll)
+function setupDynamicListingsObserver() {
+  // Check if we're on a listings page (event details/catalog page)
+  const listingsContainer = document.querySelector(".eventDetails__container");
+
+  if (!listingsContainer) {
+    return; // Not on a listings page, exit
+  }
+
+  // Apply price multiplier to existing listings on page load
+  applyPriceMultiplier();
+
+  // Create observer to watch for new listings being added
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      // Check if new nodes were added
+      if (mutation.addedNodes.length > 0) {
+        mutation.addedNodes.forEach((node) => {
+          // Check if the added node is a listing section or contains listings
+          if (node.nodeType === 1) { // Element node
+            // If it's a section with data-listingid, process it
+            if (node.tagName === "SECTION" && node.hasAttribute("data-listingid")) {
+              applyPriceMultiplierToElement(node);
+            }
+            // If it contains listing sections, process all of them
+            else if (node.querySelectorAll) {
+              const newListings = node.querySelectorAll("section[data-listingid]");
+              newListings.forEach((listing) => {
+                applyPriceMultiplierToElement(listing);
+              });
+            }
+          }
+        });
+      }
+    });
+  });
+
+  // Start observing the container for child additions
+  observer.observe(listingsContainer, {
+    childList: true,
+    subtree: true
+  });
+
+  console.log("Rosehill price multiplier: Observing for dynamically loaded listings");
+}
+
+// Apply price multiplier to a specific element (for dynamically loaded content)
+function applyPriceMultiplierToElement(element) {
+  element.querySelectorAll(".NumberPart").forEach((priceElement) => {
+    // Check if we've already processed this price element
+    if (priceElement.nextSibling &&
+        priceElement.nextSibling.textContent &&
+        priceElement.nextSibling.textContent.includes("($")) {
+      return; // Already processed
+    }
+
+    const priceText = priceElement.textContent.trim().replace(/,/g, "");
+    const price = parseFloat(priceText);
+
+    if (!isNaN(price)) {
+      const updatedPrice = price * 1.310796;
+
+      const updatedPriceElement = document.createElement("span");
+      updatedPriceElement.textContent = ` ($${formatPrice(updatedPrice)})`;
+      updatedPriceElement.style.color = "blue";
+      updatedPriceElement.style.marginLeft = "5px";
+      updatedPriceElement.style.fontWeight = "bold";
+
+      const nextSibling = priceElement.nextSibling;
+      const targetSibling = nextSibling ? nextSibling.nextSibling : null;
+
+      if (targetSibling) {
+        priceElement.parentNode.insertBefore(updatedPriceElement, targetSibling);
+      } else {
+        priceElement.parentNode.appendChild(updatedPriceElement);
+      }
+    }
+  });
+}
+
+// Initialize the observer when page loads
+window.addEventListener("load", setupDynamicListingsObserver);
