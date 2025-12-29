@@ -11,15 +11,15 @@
   "content_scripts": [
     {
       "matches": ["https://*.rosehillonline.ca/*"],
-      "js": ["content.js"]
+      "js": ["price-calculator.js"]
     },
     {
       "matches": ["https://*.rosehillonline.ca/Event/LotDetails/*"],
-      "js": ["content2.js"]
+      "js": ["custom-price-input.js"]
     },
     {
       "matches": ["https://www.google.com/search*"],
-      "js": ["google_content.js"]
+      "js": ["google-price-scraper.js"]
     }
   ],
 

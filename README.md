@@ -72,15 +72,17 @@ All data is stored locally using Chrome's storage API. This includes:
 
 ```
 rosehill/
-├── manifest.json           # Extension configuration
-├── content.js             # Main content script for price calculation and Google integration
-├── content2.js            # Custom price input functionality
-├── google_content.js      # Google search result price extraction
-├── popup.html             # Extension popup interface
-├── popup.js              # Popup functionality
-├── icon16.png            # Extension icon (16x16)
-├── icon48.png            # Extension icon (48x48)
-└── icon128.png           # Extension icon (128x128)
+├── manifest.json              # Extension configuration
+├── README.md                  # Documentation
+├── .gitignore                 # Git ignore rules
+├── price-calculator.js        # Main price calculation and Google integration
+├── custom-price-input.js      # Custom price input functionality
+├── google-price-scraper.js    # Google search result price extraction
+├── popup.html                 # Extension popup interface
+├── popup.js                   # Popup functionality
+├── icon16.png                 # Extension icon (16x16)
+├── icon48.png                 # Extension icon (48x48)
+└── icon128.png                # Extension icon (128x128)
 ```
 
 ## Browser Compatibility
@@ -98,7 +100,7 @@ The extension requires the following permissions:
 
 ### Modifying the Price Multiplier
 
-To change the multiplier, edit the value in `content.js`:
+To change the multiplier, edit the value in `price-calculator.js`:
 
 ```javascript
 const updatedPrice = price * 1.310796; // Change this value
@@ -106,7 +108,7 @@ const updatedPrice = price * 1.310796; // Change this value
 
 ### Adjusting Price Extraction
 
-Google's HTML structure may change over time. If price extraction stops working, update the selectors in `google_content.js`.
+Google's HTML structure may change over time. If price extraction stops working, update the selectors in `google-price-scraper.js`.
 
 ## Known Issues
 
