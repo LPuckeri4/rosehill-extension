@@ -5,6 +5,13 @@ function formatPrice(price) {
 // Function to multiply and display prices next to original prices
 function applyPriceMultiplier() {
   document.querySelectorAll(".NumberPart").forEach((priceElement) => {
+    // Check if we've already processed this price element
+    if (priceElement.nextSibling &&
+        priceElement.nextSibling.textContent &&
+        priceElement.nextSibling.textContent.includes("($")) {
+      return; // Already processed, skip
+    }
+
     const priceText = priceElement.textContent.trim().replace(/,/g, ""); // Remove commas
     const price = parseFloat(priceText);
 
@@ -151,7 +158,18 @@ function processLotDetails() {
 }
 
 // Run the function on page load
-window.addEventListener("load", processLotDetails);
+window.addEventListener("load", () => {
+  // Check if we're on a listings page or a detail page
+  const isListingsPage = document.querySelector(".eventDetails__container");
+
+  if (isListingsPage) {
+    // Listings/catalog page - set up observer for infinite scroll
+    setupDynamicListingsObserver();
+  } else {
+    // Individual lot detail page - process lot details
+    processLotDetails();
+  }
+});
 
 // Update Google prices when returning to the tab
 document.addEventListener("visibilitychange", () => {
@@ -162,7 +180,6 @@ document.addEventListener("visibilitychange", () => {
 
 // MutationObserver to handle dynamically loaded listings (infinite scroll)
 function setupDynamicListingsObserver() {
-  // Check if we're on a listings page (event details/catalog page)
   const listingsContainer = document.querySelector(".eventDetails__container");
 
   if (!listingsContainer) {
@@ -239,6 +256,3 @@ function applyPriceMultiplierToElement(element) {
     }
   });
 }
-
-// Initialize the observer when page loads
-window.addEventListener("load", setupDynamicListingsObserver);
