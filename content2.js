@@ -1,7 +1,7 @@
 function displayCustomPrice() {
   const lotNumberElement = Array.from(
-    document.querySelectorAll(".detail__next-prev-lot span")
-  ).find((span) => span.textContent.includes("Lot"));
+    document.querySelectorAll("b")
+  ).find((b) => b.textContent.includes("Lot #"));
 
   const lotNum = lotNumberElement ? lotNumberElement.textContent.trim() : null;
 

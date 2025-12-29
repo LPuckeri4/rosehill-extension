@@ -1,0 +1,1934 @@
+<main>
+
+    <div class="container">
+
+        <style type="text/css">
+            .banner-container {
+                text-align: center;
+                margin-top: 5px;
+                background: #c80b0b;
+
+                width: 100vw;
+                position: relative;
+                left: 50%;
+                right: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
+            }
+
+            .banner-container img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            .header-banner {
+                margin-top: -14px;
+                margin-bottom: 15px;
+            }
+        </style>
+        <div class="container-fluid banner-container header-banner"><a href="http://www.rosehilldirect.ca"
+                target="_blank"><img src="/content/images/rosehilldirect-banner-1370.png"></a></div>
+        <div class="awe-rt-SystemMessage"></div>
+
+
+
+
+
+        <div id="LID241860517" data-listingid="241860518">
+            <!-- do not remove -- this container is necessary to enable all signalR functions for this listing -->
+
+            <div class="row" data-nosnippet="">
+                <div class="col-xs-12">
+                    <div>
+                        <div class="alert alert-warning awe-rt-ListingClosedMessage awe-hidden">
+                            <a class="close" onclick="$(this).parents('div').first().slideUp();">×</a>
+                            Bidding has ended on this item.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <script>
+                var followLiveActivated = false;
+
+                $(document).ready(function () {
+                    //global reasoncodes
+                    contextMessageDictionary["Failure"] = "Failure";
+                    contextMessageDictionary["ListingNotExist"] = "Listing Does Not Exist";
+                    contextMessageDictionary["ListingNotActive"] = "This Listing is Not Active";
+                    contextMessageDictionary["ListerPerformingAction"] = "As the Seller, you cannot bid or purchase your own items.";
+                    contextMessageDictionary["ConsignorPerformingAction"] = "As the consignor, you cannot bid or purchase your own items.";
+                    contextMessageDictionary["Success"] = "Success";
+                    contextMessageDictionary["BuyNowNotAvailable"] = "Buy Now is not available";
+                    contextMessageDictionary["ProxyBeatingNewBid"] = "Another bidder\'s proxy bid is beating your new bid.";
+                    contextMessageDictionary["CantLowerProxyBid"] = "You cannot lower your previously higher proxy bid.";
+                    contextMessageDictionary["BidAmountTooLow"] = "Bid amount too low";
+                    contextMessageDictionary["ListingChangedDuringProcessing"] = "This listing changed during processing, please submit again.";
+                    contextMessageDictionary["QuantityTooHigh"] = "Quantity must be a number equal to or less than the number available";
+                    contextMessageDictionary["LicenceInvalid"] = "The License is invalid.  Contact the site administrator for further information.";
+                    contextMessageDictionary["ActingUserIsNotAuthorized"] = "You Are Not Authorized";
+
+                    var ownerAllowsInstantCheckout = false;
+                    var autoGenerateInvoices = true;
+                    var highlightCheckoutButtonForBuyNow = false;
+                    var autoCheckoutForBuyNow = false;
+
+                    $(document).on("SignalR_UpdateListingAction", function (event, data) {
+                        if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                        RefreshListingContextualStatus(data.ListingID);
+                    });
+
+                    //show the latest Context message for this acting user
+                    $(document).on("SignalR_ListingActionResponse", function (event, data) {
+                        //console.log("SignalR_ListingActionResponse DATA:", data);
+                        if ($.inArray(data.Action_ListingID, interestingListings) >= 0) {
+                            var message = "";
+                            var systemMessage = "";
+                            var cssClass = "";
+                            if (data.Context_IsFilled) {
+                                //Context is not null, prepare Context message
+                                if (!data.Context_Disregard) {
+                                    if (!contextMessageDictionary[data.Context_Status]) {
+                                        console.log("Dev Error: contextMessageDictionary['" + data.Context_Status + "'] is not defined.");
+                                        message = "Unknown Status";
+                                    } else {
+                                        message = contextMessageDictionary[data.Context_Status].format(data.Context_Parameters);
+                                    }
+                                    switch (data.Context_Disposition) {
+                                        case 0:
+                                            cssClass = "alert alert-success";
+                                            break;
+                                        case 1:
+                                            cssClass = "alert alert-warning";
+                                            break;
+                                        case 2:
+                                            cssClass = "alert alert-danger";
+                                            break;
+                                    }
+                                    //if Context message wasn't already visible, show it
+                                    $(".ContextualStatus").each(function () {
+                                        $(this).html("<div class='" + cssClass + "'>" + message + "</div>");
+                                        if (!$(this).is(":visible")) {
+                                            $(this).fadeTo(1000, 1, function () {
+                                                $(this).slideDown(500);
+                                            });
+                                        }
+                                    });
+                                }
+                                if (data.Accepted) {
+                                    //prepare success system message
+                                    systemMessage = "<div class='alert alert-success'><a class='close' onclick='$(this).parents(\"div\").first().slideUp();'>×</a>" + contextMessageDictionary["ActionSuccess"] + "</div>";
+                                    if (!$(".awe-rt-ListingActionMessage").is(":visible") || $(".awe-rt-ListingActionMessage").html() == "") {
+                                        $(".awe-rt-ListingActionMessage").hide();
+                                        $(".awe-rt-ListingActionMessage").html(systemMessage);
+                                        $(".awe-rt-ListingActionMessage").slideDown();
+                                    } else {
+                                        $(".awe-rt-ListingActionMessage").fadeOut(200, function () {
+                                            $(this).html(systemMessage);
+                                            $(this).fadeIn(200);
+                                        });
+                                    }
+                                    //render checkout button if a lineitem was returned
+                                    //EXCEPT: when Auto Generate Invoices is enabled, do not render checkout buttons for lots until the entire event has ended
+                                    if (!autoGenerateInvoices && ownerAllowsInstantCheckout && data.LineItemID) {
+                                        var checkoutUrl = 'https://rosehillonline.ca/Account/Checkout?lineitemid=' + data.LineItemID;
+                                        checkoutUrl += '&returnUrl=%2fEvent%2fLotDetails%2f241860517%2fIKASA-Pink-Giant-Teddy-Bear-39';
+
+                                        if (autoCheckoutForBuyNow) {
+                                            window.location = checkoutUrl;
+                                        }
+
+                                        var checkoutHtml =
+                                            '<div class="detail__checkout">'
+                                            + '<a href="' + checkoutUrl + '" class="btn__detail__checkout detail__option-menu__link">'
+                                            + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                            + '<path d="M0 0h24v24H0z" fill="none" />'
+                                            + '<path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />'
+                                            + '</svg></span>'
+                                            + '<span class="detail__option-menu__label">' + 'Checkout' + '</span>'
+                                            + '</a>'
+                                            + '</div>';
+                                        if ($(".detail__context-menu").find(".btn__detail__checkout").length == 0) {
+                                            $(".detail__context-menu").prepend(checkoutHtml).show();
+                                        } else {
+                                            jslog("skipped rendering checkout button because one already exists.");
+                                        }
+                                    }
+                                    if (data.LineItemID && !highlightCheckoutButtonForBuyNow) {
+                                        //render contact seller button if one does not already exist
+                                        if (true && $("a.btn__detail__contactuser").length == 0) {
+                                            var contactSellerUrl = '/Account/SendListingMessage?receiver=RosehillOnline&amp;template=ask_listing_question&amp;listingID=241860518&amp;returnUrl=%2FEvent%2FLotDetails%2F241860517%2FIKASA-Pink-Giant-Teddy-Bear-39';
+                                            var contactSellerHtml =
+                                                '<div class="detail__contactuser">'
+                                                + '<a href="' + contactSellerUrl + '" class="btn__detail__contactuser detail__option-menu__link">'
+                                                + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                                + '<path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />'
+                                                + '<path d="M0 0h24v24H0z" fill="none" />'
+                                                + '</svg></span>'
+                                                + '<span class="detail__option-menu__label">' + 'Contact Seller' + '</span>'
+                                                + '</a>'
+                                                + '</div>';
+                                            $(".detail__context-menu").append(contactSellerHtml).show();
+                                            jslog("contact button rendered for line item #" + data.LineItemID);
+                                        }
+                                        //render feedback button
+                                        if (false) {
+                                            var feedbackUrl = '/Account/SubmitFeedback?LineItemID=REPLACELINEITEMID&amp;ListingID=241860518&amp;Receiver=RosehillOnline'
+                                                .replace("REPLACELINEITEMID", data.LineItemID);
+                                            var feedbackHtml =
+                                                '<div class="detail__feedback">'
+                                                + '<a href="' + feedbackUrl + '" class="btn__detail__feedback detail__option-menu__link">'
+                                                + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                                + '<path d="M0 0h24v24H0zm15.35 6.41l-1.77-1.77c-.2-.2-.51-.2-.71 0L6 11.53V14h2.47l6.88-6.88c.2-.19.2-.51 0-.71z" fill="none" />'
+                                                + '<path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 14v-2.47l6.88-6.88c.2-.2.51-.2.71 0l1.77 1.77c.2.2.2.51 0 .71L8.47 14H6zm12 0h-7.5l2-2H18v2z" />'
+                                                + '</svg></span>'
+                                                + '<span class="detail__option-menu__label">' + 'Feedback' + '</span>'
+                                                + '</a>'
+                                                + '</div>';
+                                            $(".detail__context-menu").append(feedbackHtml).show();
+                                            jslog("feedback button rendered for line item #" + data.LineItemID);
+                                        }
+                                    }
+
+                                } else {
+                                    //ReasonString is populated, prepare a Negative System message
+                                    if (contextMessageDictionary[data.ReasonString]) {
+                                        systemMessage = "<div class='alert alert-danger'><a class='close' onclick='$(this).parents(\"div\").first().slideUp();'>×</a>" + contextMessageDictionary[data.ReasonString] + "</div>";
+                                    } else {
+                                        systemMessage = "<div class='alert alert-danger'><a class='close' onclick='$(this).parents(\"div\").first().slideUp();'>×</a>" + data.ReasonString + "</div>";
+                                    }
+                                    if (!$(".awe-rt-ListingActionMessage").is(":visible") || $(".awe-rt-ListingActionMessage").html() == "") {
+                                        $(".awe-rt-ListingActionMessage").hide();
+                                        $(".awe-rt-ListingActionMessage").html(systemMessage);
+                                        $(".awe-rt-ListingActionMessage").slideDown();
+                                    } else {
+                                        $(".awe-rt-ListingActionMessage").fadeOut(200, function () {
+                                            $(this).html(systemMessage);
+                                            $(this).fadeIn(200);
+                                        });
+                                    }
+                                }
+                            } else {
+                                //Context is null, but ReasonString is populated, prepare a Negative System message
+                                if (contextMessageDictionary[data.ReasonString]) {
+                                    systemMessage = "<div class='alert alert-danger'><a class='close' onclick='$(this).parents(\"div\").first().slideUp();'>×</a>" + contextMessageDictionary[data.ReasonString] + "</div>";
+                                } else {
+                                    systemMessage = "<div class='alert alert-danger'><a class='close' onclick='$(this).parents(\"div\").first().slideUp();'>×</a>" + data.ReasonString + "</div>";
+                                }
+                                if (!$(".awe-rt-ListingActionMessage").is(":visible") || $(".awe-rt-ListingActionMessage").html() == "") {
+                                    $(".awe-rt-ListingActionMessage").hide();
+                                    $(".awe-rt-ListingActionMessage").html(systemMessage);
+                                    $(".awe-rt-ListingActionMessage").slideDown();
+                                } else {
+                                    $(".awe-rt-ListingActionMessage").fadeOut(200, function () {
+                                        $(this).html(systemMessage);
+                                        $(this).fadeIn(200);
+                                    });
+                                }
+                            }
+                        }
+                    });
+
+                    // render a checkout button if:
+                    //
+                    //   - the lot ends successfully, and
+                    //   - the winner is viewing, but only if
+                    //   - auto gen invoices is disabled
+                    //
+                    // mainly to prevent one invoice per LOT per buyer, rather than the generally preferred one invoice per EVENT per buyer
+                    $(document).on("SignalR_UpdateListingStatus", function (event, data) {
+                        if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                        if (autoGenerateInvoices || ownerAllowsInstantCheckout) {
+                            if (data.Status == "Successful" && data.LineItemID && data.LineItemPayerUN == "") {
+
+                                //when Auto Generate Invoices is enabled, do not render checkout buttons for lots until the entire event has ended
+                                if (!autoGenerateInvoices) {
+                                    var checkoutUrl = 'https://rosehillonline.ca/Account/Checkout?lineitemid=' + data.LineItemID;
+                                    checkoutUrl += '&returnUrl=%2fEvent%2fLotDetails%2f241860517%2fIKASA-Pink-Giant-Teddy-Bear-39';
+                                    var checkoutHtml =
+                                        '<div class="detail__checkout">'
+                                        + '<a href="' + checkoutUrl + '" class="btn__detail__checkout detail__option-menu__link">'
+                                        + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                        + '<path d="M0 0h24v24H0z" fill="none" />'
+                                        + '<path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />'
+                                        + '</svg></span>'
+                                        + '<span class="detail__option-menu__label">' + 'Checkout' + '</span>'
+                                        + '</a>'
+                                        + '</div>';
+                                    if ($(".detail__context-menu").find(".btn__detail__checkout").length == 0) {
+                                        $(".detail__context-menu").prepend(checkoutHtml).show();
+                                    } else {
+                                        jslog("skipped rendering checkout button because one already exists.");
+                                    }
+                                }
+
+                                //render contact seller button if one does not already exist
+                                if (true && $("a.btn__detail__contactuser").length == 0) {
+                                    //"/Account/SendListingMessage?receiver=tester1&amp;template=ask_listing_question&amp;listingID=166614&amp;returnUrl=%2FListing%2FDetails%2F166614%2Ftest-item-J"
+                                    var contactSellerUrl = '/Account/SendListingMessage?receiver=RosehillOnline&amp;template=ask_listing_question&amp;listingID=241860518&amp;returnUrl=%2FEvent%2FLotDetails%2F241860517%2FIKASA-Pink-Giant-Teddy-Bear-39';
+                                    var contactSellerHtml =
+                                        '<div class="detail__contactuser">'
+                                        + '<a href="' + contactSellerUrl + '" class="btn__detail__contactuser detail__option-menu__link">'
+                                        + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                        + '<path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />'
+                                        + '<path d="M0 0h24v24H0z" fill="none" />'
+                                        + '</svg></span>'
+                                        + '<span class="detail__option-menu__label">' + 'Contact Seller' + '</span>'
+                                        + '</a>'
+                                        + '</div>';
+                                    $(".detail__context-menu").append(contactSellerHtml).show();
+                                    jslog("contact button rendered for line item #" + data.LineItemID);
+                                }
+                                //render feedback button
+                                if (false) {
+                                    var feedbackUrl = '/Account/SubmitFeedback?LineItemID=REPLACELINEITEMID&amp;ListingID=241860518&amp;Receiver=RosehillOnline'
+                                        .replace("REPLACELINEITEMID", data.LineItemID);
+                                    var feedbackHtml =
+                                        '<div class="detail__feedback">'
+                                        + '<a href="' + feedbackUrl + '" class="btn__detail__feedback detail__option-menu__link">'
+                                        + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                        + '<path d="M0 0h24v24H0zm15.35 6.41l-1.77-1.77c-.2-.2-.51-.2-.71 0L6 11.53V14h2.47l6.88-6.88c.2-.19.2-.51 0-.71z" fill="none" />'
+                                        + '<path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 14v-2.47l6.88-6.88c.2-.2.51-.2.71 0l1.77 1.77c.2.2.2.51 0 .71L8.47 14H6zm12 0h-7.5l2-2H18v2z" />'
+                                        + '</svg></span>'
+                                        + '<span class="detail__option-menu__label">' + 'Feedback' + '</span>'
+                                        + '</a>'
+                                        + '</div>';
+                                    $(".detail__context-menu").append(feedbackHtml).show();
+                                    jslog("feedback button rendered for line item #" + data.LineItemID);
+                                }
+                            }
+                        }
+                    });
+
+                    $(document).on("SignalR_UpdateInvoiceStatus", function (event, data) {
+                        if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                        jslog("SignalR_UpdateInvoiceStatus (listing, invoice, status, payer): " + data.ListingID + ", " + data.InvoiceID + ", " + data.InvoiceStatus + ", " + data.InvoicePayerUN);
+
+                        //show "View Invoice" or "Checkout" button if applicable
+                        if (data.InvoicePayerUN == aweUserName) {
+                            //get result of /RealTime/IsInvoicePayable?invoiceId=nnnnnn
+                            var promise = RwxProxy.invokeAsync("IsInvoicePayable", { invoiceId: data.InvoiceID },
+                                function (result) {
+                                    var checkoutUrl = 'https://rosehillonline.ca/Account/Invoice/' + data.InvoiceID;
+                                    checkoutUrl += '?returnUrl=%2fEvent%2fLotDetails%2f241860517%2fIKASA-Pink-Giant-Teddy-Bear-39';
+                                    if (result.isPayable) {
+                                        //invoice is payable
+
+                                        if (autoCheckoutForBuyNow) {
+                                            window.location = checkoutUrl;
+                                        }
+
+                                        if ($("a.btn__detail__checkout").length == 0) {
+                                            //render checkout button if one does not already exist
+                                            var checkoutHtml =
+                                                '<div class="detail__checkout">'
+                                                + '<a href="' + checkoutUrl + '" class="btn__detail__checkout detail__option-menu__link">'
+                                                + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                                + '<path d="M0 0h24v24H0z" fill="none" />'
+                                                + '<path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />'
+                                                + '</svg></span>'
+                                                + '<span class="detail__option-menu__label">' + 'Checkout' + '</span>'
+                                                + '</a>'
+                                                + '</div>';
+                                            $(".detail__context-menu").prepend(checkoutHtml).show();
+                                            jslog("checkout button rendered for invoice #" + data.InvoiceID);
+                                        }
+                                    } else {
+                                        //the invoice is not payable, so instead of 'checkout' button, render 'view invoice' button if one does not already exist
+                                        if ($("a.btn__detail__invoices").length == 0) {
+                                            var viewInvoiceHtml =
+                                                '<div class="detail__invoices">'
+                                                + '<a href="' + checkoutUrl + '" class="btn__detail__invoices detail__option-menu__link">'
+                                                + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                                + '<path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />'
+                                                + '<path d="M0 0h24v24H0z" fill="none" />'
+                                                + '</svg></span>'
+                                                + '<span class="detail__option-menu__label">' + 'View Invoice' + '</span>'
+                                                + '</a>'
+                                                + '</div>';
+                                            $(".detail__context-menu").append(viewInvoiceHtml).show();
+                                            jslog("view invoice button rendered for invoice #" + data.InvoiceID);
+                                        }
+                                    }
+                                    //only render the contact and/or feedback buttons if either
+                                    //   a) the web.config setting HighlightCheckoutButtonForBuyNow is set to False, or
+                                    //   b) the invoice is not payable
+                                    if (!highlightCheckoutButtonForBuyNow || !result.isPayable) {
+                                        //render contact seller button if one does not already exist
+                                        if (true && $("a.btn__detail__contactuser").length == 0) {
+                                            var contactSellerUrl = '/Account/SendListingMessage?receiver=RosehillOnline&template=ask_listing_question&listingID=241860518&returnUrl=%2FEvent%2FLotDetails%2F241860517%2FIKASA-Pink-Giant-Teddy-Bear-39';
+                                            var contactSellerHtml =
+                                                '<div class="detail__contactuser">'
+                                                + '<a href="' + contactSellerUrl + '" class="btn__detail__contactuser detail__option-menu__link">'
+                                                + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                                + '<path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />'
+                                                + '<path d="M0 0h24v24H0z" fill="none" />'
+                                                + '</svg></span>'
+                                                + '<span class="detail__option-menu__label">' + 'Contact Seller' + '</span>'
+                                                + '</a>'
+                                                + '</div>';
+                                            $(".detail__context-menu").append(contactSellerHtml).show();
+                                            jslog("contact button rendered for invoice #" + data.InvoiceID);
+                                        }
+                                        //render feedback button
+                                        if (false) {
+                                            var feedbackUrl = '/Account/SubmitFeedback?LineItemID=REPLACELINEITEMID&ListingID=241860518&Receiver=RosehillOnline'
+                                                .replace("REPLACELINEITEMID", data.LineItemID);
+                                            var feedbackHtml =
+                                                '<div class="detail__feedback">'
+                                                + '<a href="' + feedbackUrl + '" class="btn__detail__feedback detail__option-menu__link">'
+                                                + '<span class="detail__option-menu__icon"><svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">'
+                                                + '<path d="M0 0h24v24H0zm15.35 6.41l-1.77-1.77c-.2-.2-.51-.2-.71 0L6 11.53V14h2.47l6.88-6.88c.2-.19.2-.51 0-.71z" fill="none" />'
+                                                + '<path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 14v-2.47l6.88-6.88c.2-.2.51-.2.71 0l1.77 1.77c.2.2.2.51 0 .71L8.47 14H6zm12 0h-7.5l2-2H18v2z" />'
+                                                + '</svg></span>'
+                                                + '<span class="detail__option-menu__label">' + 'Feedback' + '</span>'
+                                                + '</a>'
+                                                + '</div>';
+                                            $(".detail__context-menu").append(feedbackHtml).show();
+                                            jslog("feedback button rendered for invoice #" + data.InvoiceID);
+                                        }
+                                    }
+                                },
+                                function (error) {
+                                    jslog("Error retrieving invoice status (1): " + error);
+                                }
+                            );
+                            promise.fail(function (jqXHR, textStatus) {
+                                jslog("Error retrieving invoice status (2): " + textStatus);
+                            });
+                        }
+                    });
+
+                });
+
+
+
+            </script>
+
+
+            <div class="row">
+                <div class="col-xs-12">
+
+                    <div class="panel panel-default event-data" data-eventid="241814881" data-nosnippet="">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-sm-7 col-md-9 clearfix">
+                                    <h1 class="event-title">
+                                        <a
+                                            href="/Event/Details/241814881/Auction-493-ACT-I-Burlington-Closes-Tuesday-December-30-2025">Auction
+                                            #493 ACT I @ Burlington Closes Tuesday, December 30, 2025</a>
+                                        <span class="eventDetails__status"><span class="awe-rt-ColoredStatus"> <span
+                                                    class="label label-success">Active</span>
+                                            </span>(#241814881)</span>
+                                    </h1>
+                                    <p>
+                                        <a
+                                            href="/Event/Details/241814881/Auction-493-ACT-I-Burlington-Closes-Tuesday-December-30-2025#LID241860518">
+                                            <span class="glyphicon glyphicon-chevron-left"></span>
+                                            Back To Catalog
+                                        </a>
+                                    </p>
+                                    <p><a data-toggle="modal" href="#TermsAndConditions"><span
+                                                class="glyphicon glyphicon-list-alt"></span>Terms &amp; Conditions</a>
+                                    </p>
+                                    <p><a data-toggle="modal" href="#ShippingInformation"><span
+                                                class="glyphicon glyphicon-envelope"></span>Pickup Information</a></p>
+                                    <div class="modal fade" id="TermsAndConditions">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-body">
+                                                    <p><b>Auction Type</b> This is an online auction only.</p>
+
+                                                    <p><b>Auction Location</b> 1047 Cooke Blvd., Burlington, ON
+                                                        L7T&nbsp;4A8 &amp; 1754 Garrison Rd., Fort Erie ON L2A 5M4</p>
+
+                                                    <p><b>Acceptance of Terms</b> Rosehill Online (<a
+                                                            href="tel:1492222">1492222</a> Ontario Inc), provides its
+                                                        service and items to you, subject to the following Terms &amp;
+                                                        Conditions ("TAC"), which we may update from time to time
+                                                        without notice to you.</p>
+
+                                                    <p><b>Registration &amp; Identification</b> At the time of
+                                                        registration, we collect information about you to verify who you
+                                                        are before you can bid. We collect credit card information to
+                                                        ensure that you are a qualified buyer. All bidders must be of
+                                                        legal age to bid which is 18 years old. We verify your email
+                                                        account to ensure you receive all communication from Rosehill
+                                                        Online.<br>
+                                                        By registering you acknowledge that you have read, understood
+                                                        and agree to all the terms, conditions, rules and regulations
+                                                        stated below and anywhere else within this website.</p>
+
+                                                    <p><b>Online Auction Use</b> Our online auction can only be, and may
+                                                        only be used by individuals who can form legally binding
+                                                        contracts under applicable law. Without limiting the foregoing,
+                                                        our services are not available to children (persons under the
+                                                        age of 18) or to temporarily or indefinitely suspended members.
+                                                        If you do not qualify, please do not use our service. If you are
+                                                        registering as a business entity, you represent that you have
+                                                        the authority to bind the entity to the terms &amp; conditions.
+                                                    </p>
+
+                                                    <p><b>Registrants Obligation</b> In consideration of your use of our
+                                                        online auction, you agree to: (a) provide true, accurate,
+                                                        current and complete information about yourself as prompted by
+                                                        the registration form&nbsp;and (b) maintain and promptly update
+                                                        the Account Information to keep it true, accurate, current and
+                                                        complete. Keeping a valid credit card on your account is
+                                                        mandatory. If you provide any information that is untrue,
+                                                        inaccurate, not current or incomplete, or Rosehill Online has
+                                                        reasonable grounds to suspect that such information is untrue,
+                                                        inaccurate, not current or incomplete, Rosehill Online has the
+                                                        right to suspend or terminate your account and refuse any and
+                                                        all current or future use of Rosehill Online's website and
+                                                        services (or any portion thereof).</p>
+
+                                                    <p><b>Paying For Your Purchases</b> There is no cost to register for
+                                                        an auction. Your credit card will not be charged unless you win
+                                                        a bid. You will be required to have a valid major credit card
+                                                        registered to your account to bid on any item.&nbsp; When an
+                                                        auction closes, the registered credit card is charged
+                                                        automatically by our credit card merchant STRIPE® and winning
+                                                        bidders will receive an e-mail with an attached PAID invoice or
+                                                        receipt from rosehillonline.ca. We only accept credit cards for
+                                                        payment. No debit cards or e-transfers are acceptable. If your
+                                                        credit card fails to pay you will be notified by e-mail the
+                                                        payment was not successful. You will have 7 days to pay the
+                                                        invoice or risk the your account being closed and future
+                                                        participation restricted. If the credit card using to pay is not
+                                                        usable you have the option to pay for the invoice in cash. You
+                                                        MUST notify us if you are paying in cash. Cash payments can only
+                                                        be accepted at the place the auction was held. No transfers to
+                                                        other locations or deliveries are&nbsp;possible if you are
+                                                        paying in cash.&nbsp;</p>
+
+                                                    <p><b>Fees &amp; Taxes</b>&nbsp;<b>:</b> All items on this site are
+                                                        subject to a 16% buyers premium and also HST (13% sales tax).
+                                                        All items are priced in Canadian dollars. If you are a
+                                                        successful bidder, you are responsible for paying any buyer's
+                                                        premium and taxes on the final price paid for an Item. The
+                                                        buyer’s premium is a taxable item. Accordingly, it is your
+                                                        responsibility to check the applicable taxes and fees that may
+                                                        be imposed on an Item prior to bidding for it.</p>
+
+                                                    <p><b>Terms for Non-Payment</b> All bids are final and winning bids
+                                                        are automatically processed to the winning buyers registered
+                                                        credit card. If you are the winning bidder and your payment has
+                                                        failed because your registered credit card has declined you will
+                                                        be notified by email. The buyer is then given a chance to
+                                                        rectify the issue with their bank or contact Rosehill Online to
+                                                        make other arrangements. If the invoice has not been paid in
+                                                        7&nbsp;days after the event closes or within a time extension
+                                                        allotted by Rosehill Online then the buyer could face legal
+                                                        action and will be restricted from participating in further
+                                                        events. Cash payments are permitted if the registered credit
+                                                        card is compromised or otherwise not usable.&nbsp;</p>
+
+                                                    <p><b>Bidding </b>We recommend that bidders put in their maximum
+                                                        bid, or also called proxy bid, when placing a bid online. This
+                                                        does not mean you will have to pay the amount you bid; you only
+                                                        pay one bid increment more than the next highest bid, and only
+                                                        up to your maximum bid. The software system will play out the
+                                                        bids as you would at a live auction and only uses the funds
+                                                        required to beat out the under-bidder at the prescribed bid
+                                                        increment.&nbsp;</p>
+
+                                                    <p><b>Bid Increments</b></p>
+
+                                                    <p>Price Level &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Bid
+                                                        Increment</p>
+
+                                                    <p>$0.00 - $24.99 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                        $1.00</p>
+
+                                                    <p>$25.00 - $99.99&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                        $2.50</p>
+
+                                                    <p>$100.00 - $199.99 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;$5.00</p>
+
+                                                    <p>$200.00 - $999.99 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;$10.00</p>
+
+                                                    <p>$1000.00 - $4999.99 &nbsp; &nbsp;&nbsp;$25.00</p>
+
+                                                    <p>$5000.00 - $9999.99 &nbsp; &nbsp; $50.00</p>
+
+                                                    <p>$10000.00+.&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                        &nbsp; &nbsp; $100.00</p>
+
+                                                    <p><b>Bidding Notification</b> You can choose to be notified by
+                                                        e-mail during the auction if you have been outbid. Please note
+                                                        that outbid notifications are NOT sent out once the auction
+                                                        begins to close at 7pm on the closing day.&nbsp;</p>
+
+                                                    <p><b>Email Communication</b> As per Canada's new anti-spam
+                                                        legislation (effective date July 1, 2014), we are required to
+                                                        secure your consent to communicate with you electronically. By
+                                                        registering for this auction, you are opting in to receive
+                                                        auction notices from Rosehill Online (rosehillonline.ca). Your
+                                                        privacy is important to us -- your email address will not be
+                                                        shared with any other party.</p>
+
+                                                    <p><b>Reviewing Your Bids</b> During an auction you can check the
+                                                        status of your bids at anytime. Note that no bids can be
+                                                        withdrawn after the auction, for any reason, after auction
+                                                        begins to close.<br>
+                                                        The amount bid can be increased but cannot be decreased.
+                                                        Rosehill Online may, at their discretion, allow you to withdraw
+                                                        and resubmit a bid in the case of bids containing an obvious
+                                                        typographical error before the auction begins to close. You may
+                                                        forward a request to withdraw a bid and resubmit a correct bid
+                                                        by immediately sending an email to the Rosehill Online, however,
+                                                        there is no guarantee that any bid will be withdrawn.</p>
+
+                                                    <p><b>Warranties &amp; Guarantees&nbsp;</b>As third party sellers
+                                                        Rosehill Online does not offer or honour warranties on any items
+                                                        unless expressed in our comments at the beginning of the item
+                                                        description. Any reference to warranties or guarantees in the
+                                                        description by the manufacturer is not a guarantee from Rosehill
+                                                        Online and we cannot offer original bills of sale for
+                                                        registering items with the manufacturer.</p>
+
+                                                    <p><b>Due Diligence </b>It is the onus of the bidder to know the
+                                                        item they are bidding on. Information is found in the title,
+                                                        sub-title, description and photos. We endeavour to make the
+                                                        representation of the item as accurate as possible. If you have
+                                                        any questions or need clarity on a description please contact us
+                                                        by email prior to the closing of the auction.</p>
+
+                                                    <p><b>Representation of Lots </b>Representation of items offered on
+                                                        auction are taken directly from the manufacturers and/or
+                                                        distributors website.&nbsp;We do not warrant that products
+                                                        descriptions from major retail sites are accurate, complete,
+                                                        reliable, current or error free. It is essentially up to the
+                                                        buyer/bidder to research the item themselves before placing bids
+                                                        or risk being disappointed. Return requests will not be offered
+                                                        because the item does not suit the bidders standards. For
+                                                        example, if the information states an item is blue but the
+                                                        bidder feels its not the shade of blue they expected this will
+                                                        not warrant a refund approval. If we stated the item was blue
+                                                        but the item was the red option then this would allow a
+                                                        return.&nbsp;<br>
+                                                        The text describing the item will always override the images
+                                                        representation of the item. In other words, if the item was
+                                                        described as 60" wide but it appears smaller in the photos, then
+                                                        the text and not the photo is deemed the accurate
+                                                        representation.&nbsp;<br>
+                                                        It is the bidders / buyers obligation to ensure that the item is
+                                                        free of any recalls, or any other hazard or revocation as
+                                                        provided in the Canada Consumer Product Safety Act (CCPSA)
+                                                        regardless of statements or claims that are made directly or
+                                                        indirectly by the seller.</p>
+
+                                                    <p><b>Bidders Obligation</b> By placing a bid, you are making a
+                                                        binding and irrevocable offer to purchase the Item at any price
+                                                        up to the maximum bid amount you submit. If you win, you must
+                                                        complete the transaction, subject to any contractual right or
+                                                        other right at law to rescind the contract in certain
+                                                        circumstances. Failure to complete transaction without lawful
+                                                        reason is not only a breach of your contract with the Rosehill
+                                                        Online but also a breach of these terms &amp; conditions.</p>
+
+                                                    <p><b>Soft Close</b> Items close at regular intervals noted on the
+                                                        items closing countdown clock. To prevent a bidder from
+                                                        'sniping', all bids made within 2 minutes of the lot closing
+                                                        will force an item to stay open for an additional 2 minutes.
+                                                        This will continue until all counter bidding has ceased. Soft
+                                                        close auto extension begins once the auction begins to close at
+                                                        7pm.</p>
+
+                                                    <p><b>The Winning Bid</b> The winning bid in an auction will be the
+                                                        highest bid. In the case of equal bids, the earliest bid
+                                                        received will be the winning bid. If a higher bid is
+                                                        subsequently withdrawn or removed then Rosehill Online shall
+                                                        have the right to accept the next highest bid.</p>
+
+                                                    <p><b>Auction Records</b> In the unlikely event of a dispute, you
+                                                        agree to accept as true the information that we have in our
+                                                        online records and bidding history provided by our software.</p>
+
+                                                    <p><b>Additions or Deletions</b> We reserve the right to remove
+                                                        and/or add lots and/or items to the sale at any point during the
+                                                        auction.</p>
+
+                                                    <p><b>Catalogue Errors &amp; Omissions</b> If a description does not
+                                                        match a picture in a lot, the description takes precedence.</p>
+
+                                                    <p><b>Condition of Lots Sold</b> Our best efforts are made to
+                                                        represent all items accurately in descriptions and photographs.
+                                                        We inspect items and define their condition to the best of our
+                                                        ability. Though all description and commentary are believed to
+                                                        be correct, neither Rosehill Online nor Consignor makes any
+                                                        warranties or representations of any kind with respect to the
+                                                        property, and in no event shall be held responsible for having
+                                                        made or implied any warranty of description, sizes, geniuses,
+                                                        authorship, attribution, provenance, period, culture, source,
+                                                        origin, condition, etc.</p>
+
+                                                    <p><b>Lot and Item Condition Definitions</b> The following list
+                                                        details the criterion Rosehill Online uses to determine the
+                                                        condition of lots and items sold on our auction.</p>
+
+                                                    <ul>
+                                                        <li><b>Brand New</b><br>
+                                                            The item appears untouched although the packaging could be
+                                                            opened or seal broken by Rosehill Online to verify its
+                                                            condition. The packaging is the original packaging but may
+                                                            not be in perfect condition. No parts are missing and
+                                                            packing material is present.&nbsp;</li>
+                                                        <li><b>New Condition</b><br>
+                                                            The item appears to have been opened and handled by another.
+                                                            Although the item has been removed from its packaging it has
+                                                            been returned in excellent condition. It differs from brand
+                                                            new in that it has been opened and handled previously. The
+                                                            packaging might not be the original and packing material may
+                                                            be missing.</li>
+                                                        <li><b>Refurbished</b><br>
+                                                            An item officially labelled as refurbished by the
+                                                            manufacturer. The item is in new condition and appears and
+                                                            operates as new.</li>
+                                                        <li><b>New with Issue</b><br>
+                                                            Items in this category are deemed new or brand new but have
+                                                            a flaw, packing damage or other issue caused by the
+                                                            manufacturer or from packing issues or transporting. The
+                                                            item did not receive the issue from a previous buyer. Please
+                                                            see comments for details.</li>
+                                                        <li><b>Lightly Used</b><br>
+                                                            This item has been inspected and tested. The item, to our
+                                                            best knowledge, functions as intended without issue. The
+                                                            product is in excellent condition but may have light wear
+                                                            marks or other signs of normal use. Lightly Used items are
+                                                            not new but are also not well used.&nbsp;</li>
+                                                        <li><b>Used</b><br>
+                                                            Items listed as new are functioning and have been tested to
+                                                            the best of our ability. The item will have signs of varying
+                                                            use. Original packaging may not be present and manuals and
+                                                            assembly instructions may also not be included. This item
+                                                            appears to have been used for its purpose more than multiple
+                                                            times beyond the standards of lightly used.</li>
+                                                        <li><b>Used with Issue</b><br>
+                                                            An item that is used and functions but also has a condition
+                                                            that is not from normal wear and tear. The issue is not
+                                                            cosmetic but maybe significant to the buyer depending on the
+                                                            nature of the issue. Please see listers’ comments.&nbsp;
+                                                        </li>
+                                                        <li><b>Salvage</b><br>
+                                                            Items deemed salvage are considered not functional as
+                                                            intended but may have value as parts or the be repurposed
+                                                            for another use.&nbsp;</li>
+                                                        <li><b>“As Is”</b><br>
+                                                            An item that is unique in its condition. The issues will be
+                                                            noted by the lister and represented in the issue photos.
+                                                            Listings considered “As Is” are non returnable and it is up
+                                                            to the bidder to be satisfied with our listing or enquire if
+                                                            they have any questions prior to bidding. The option to
+                                                            preview “As Is” items can be arranged prior to the
+                                                            closing.&nbsp;</li>
+                                                    </ul>
+
+                                                    <p><b>Pickups</b>&nbsp;Pickup location is at 1047 Cooke Blvd.,
+                                                        Burlington, ON L7T&nbsp;4A8. The purchaser can pick up their
+                                                        items with a paid receipt. Items can not be picked up until the
+                                                        invoice is paid. Government issue ID is required to pick up
+                                                        items by the original purchaser or by a representative added to
+                                                        your account as an Alternate Pick-up Person. Removal shall be at
+                                                        the expense, liability, and risk of the purchaser. Do not bid if
+                                                        you are unable to have your items picked up. All items must be
+                                                        picked up within 7 days after the event closes. Extensions for
+                                                        holding items are granted by Rosehill Online's discretion only.
+                                                        All items left on Rosehill Onlines property for more than 14
+                                                        days after the event closes OR 7 days after receiving a Transfer
+                                                        verification email will be considered abandoned. See Following.
+                                                    </p>
+
+                                                    <p><b>Abandoned Items</b> We understand situations occur making it
+                                                        very difficult or impossible to pick up items in the week after
+                                                        the auction. We will hold items for a reasonable amount of time
+                                                        if requested, but only if specifically authorized by Rosehill
+                                                        Online. Due to storage space and the liability of holding sold
+                                                        items, any items not picked up after 14&nbsp;days of the event’s
+                                                        closing OR 7 days after a Transfer notification email is sent
+                                                        will be placed back into Rosehill Online’s possession and
+                                                        ownership, unless prior consent from Rosehill Online. Refunds
+                                                        are not offered on items won on auction due to abandonment as
+                                                        this would enable bidders to not honour their bids due to buyers
+                                                        remorse or a change of mind.</p>
+
+                                                    <p><b>Returns Items</b> are eligible for returns if the following
+                                                        conditions exist: The item has been either misrepresented by us
+                                                        or it is listed as functional and it is not. A return request
+                                                        must be made within 7 days after pick up of items to qualify for
+                                                        a refund unless expressed otherwise by Rosehill Online. Please
+                                                        note, because the item is listed in a certain condition, for
+                                                        example New, that does not mean the item does not require
+                                                        inspection. We do our best to represent items as accurately as
+                                                        possible but items still require inspection&nbsp;as soon as
+                                                        possible so you don't risk getting something you didn't
+                                                        expect.&nbsp;</p>
+
+                                                    <p><b>Refunds</b> - Full or partial refunds are applied to the
+                                                        buyer's registered credit card. Refunds take 5 - 10 business
+                                                        days to deposit into that account. If the invoice is paid in
+                                                        cash then a credit is applied to your account.</p>
+
+                                                    <p><b>Personal &amp; Property Risk</b> We will not be liable for
+                                                        damage or injury to individuals or their property.</p>
+
+                                                    <p><b>Claims </b>No claims regarding goods purchased will be
+                                                        allowed.</p>
+
+                                                    <p><b>Legal Compliance</b> You shall comply with all applicable
+                                                        domestic and international laws, statutes, ordinances and
+                                                        regulations regarding your use of our service and your bidding
+                                                        on, listing, purchase, solicitation of offers to purchase, and
+                                                        sale of items.</p>
+
+                                                    <p><b>Indemnity</b> You agree to indemnify and hold Rosehill Online
+                                                        harmless from any claim or demand, including reasonable
+                                                        attorneys' fees, made by any third party due to or arising out
+                                                        of your breach of this Agreement or the documents it
+                                                        incorporates by reference, or your violation of any law or the
+                                                        rights of a third party.</p>
+
+                                                    <p><b>Privacy</b> We do not sell or rent your personal information
+                                                        to third parties for their marketing purposes without your
+                                                        explicit consent and we only use your information as described
+                                                        in the Privacy Policy.</p>
+
+                                                    <p><b>Copyright</b> All material and content as provided by the
+                                                        Rosehill Online is protected by copyright and similar rights.
+                                                        You can not use or make available any of that material for any
+                                                        commercial purpose.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-default"
+                                                        data-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal fade" id="ShippingInformation">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-body">
+                                                    <p><b>Curbside Pickup&nbsp;</b><strong>ONLY</strong></p>
+
+                                                    <p><b>Pickup Times:</b></p>
+
+                                                    <p>7 days after the event closes Wed - Sat 10 am to 5pm and Tue 10am
+                                                        to 5pm. (Closed Sunday &amp; Monday &amp; Holidays) Extension to
+                                                        pick up later are by email consent only. All items after 14 days
+                                                        are considered abandoned and returned to Rosehill Online's
+                                                        property without refund.&nbsp;</p>
+
+                                                    <p><b>Location:</b></p>
+
+                                                    <p>1047 Cooke Blvd. Burlington, ON L7T&nbsp;4A8, Canada</p>
+
+                                                    <p><b>What to bring:</b><br>
+                                                        Your paid invoice and a vehicle large enough to hold your items.
+                                                        This can be a printed out copy or the emailed version on your
+                                                        smart phone. You will need Government Photo ID that matches the
+                                                        information on your invoice. An alternate pickup person is
+                                                        allowed to pickup on the buyers behalf but must be recorded in
+                                                        the buyer's account as the designated Alternate Pickup Person,
+                                                    </p>
+
+                                                    <p><strong>Contact us once you have arrived:</strong></p>
+
+                                                    <p>Use the posted phone number found on the sign in each parking
+                                                        spot to text us your invoice number and the parking space you
+                                                        are parked at.</p>
+
+                                                    <p>Stay put! Please don't come in the building and respect social
+                                                        distancing with our staff and others.</p>
+
+                                                    <p><b>Pickup Times:</b></p>
+
+                                                    <p>Are detailed on the paid invoice emailed to you.</p>
+
+                                                    <p><strong>Contact us once you have arrived:</strong></p>
+
+                                                    <p>Use the posted phone number found on the sign in each parking
+                                                        spot to text us your invoice number and the parking space you
+                                                        are parked at.</p>
+
+                                                    <p>Stay put! Please don't come in the building and respect social
+                                                        distancing with our staff and others.</p>
+
+                                                    <p>Our staff will process your lots and bring them out to your
+                                                        vehicle. If the item(s) are small we will place the items in
+                                                        your vehicle for you. If its a larger order we will leave the
+                                                        item on a cart by your car for you to load.&nbsp;</p>
+
+                                                    <p>Our staff will not be able to help you with loading unless the
+                                                        item is large and heavy then we will instruct you to bring your
+                                                        vehicle to the large door where our staff will load your item.
+                                                    </p>
+
+                                                    <p>Note, we are not responsible for securing your items in any way.
+                                                        Please bring tie downs etc to secure your items if necessary.
+                                                    </p>
+
+                                                    <p><strong>Transfers:</strong></p>
+
+                                                    <p>We offer transfers to our other two store locations of Fort Erie
+                                                        &amp; Thorold. There is a $10 fee for transfers and can be
+                                                        requested through your paid invoice email notification.</p>
+
+                                                    <p>&nbsp;</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-default"
+                                                        data-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-5 col-md-3">
+
+
+                                    <div class="data-card small">
+                                        This Auction Uses <strong>Proxy Bidding</strong>.
+                                    </div>
+                                    <div class="btn-group btn-group-justified mt10">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-default" disabled="">
+                                                <span class="glyphicon glyphicon-chevron-left"></span>
+                                                Previous Lot
+                                            </button>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-default GoToNextLot">
+                                                Next Lot
+                                                <span class="glyphicon glyphicon-chevron-right"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        $(document).ready(function () {
+                            $("#ToggleFollowingLive").on("click", function () {
+                                if ($(this).prop("checked")) {
+                                    var thisEventId = '241814881';
+                                    console.log("Finding next lot...");
+                                    $.post('RealTime/GetNextLotClosing', { eventId: thisEventId }).done(function (data) {
+                                        if (data.LotId) {
+                                            var baseTargetUrl = '/Event/LotDetails/[NEXTLOTID]';
+                                            if (baseTargetUrl.indexOf("?") < 0) {
+                                                baseTargetUrl += "?FollowLive=true"
+                                            } else {
+                                                baseTargetUrl += "&FollowLive=true"
+                                            }
+                                            var targetUrl = baseTargetUrl.replace("[NEXTLOTID]", data.LotId);
+                                            console.log("Redirecting to next lot...", targetUrl);
+                                        } else {
+                                            var targetUrl = '/Event/Details/241814881';
+                                            console.log("Next lot NOT FOUND; redirecting to event detail page...", targetUrl);
+                                        }
+                                        document.location = targetUrl;
+                                    });
+                                } else {
+                                    var targetUrl = '/Event/LotDetails/241860517';
+                                    console.log("ToggleFollowingLive un-checked; targertUrl:", targetUrl);
+                                    document.location = targetUrl;
+                                }
+                            });
+                        });
+                        $(".GoToPrevLot").on("click", function () {
+                            var thisLotOrder = 0;
+                            var lastLotOrder = 697;
+                            if (thisLotOrder > 0) {
+                                $(".GoToPrevLot").prop("disabled", true);
+                                $.post("/RealTime/GetLotIdByLotOrder",
+                                    { eventId: 241814881, lotOrder: (thisLotOrder - 1) })
+                                    .done(function (data) {
+                                        if (data.LotId) {
+                                            window.location.href = "/Event/LotDetails" + "/" + data.LotId;
+                                        }
+                                    });
+                            }
+                        });
+                        $(".GoToNextLot").on("click", function () {
+                            var thisLotOrder = 0;
+                            var lastLotOrder = 697;
+                            if (thisLotOrder < lastLotOrder) {
+                                $(".GoToNextLot").prop("disabled", true);
+                                $.post("/RealTime/GetLotIdByLotOrder",
+                                    { eventId: 241814881, lotOrder: (thisLotOrder + 1) })
+                                    .done(function (data) {
+                                        console.log("next lot result: ", data);
+                                        if (data.LotId) {
+                                            window.location.href = "/Event/LotDetails" + "/" + data.LotId;
+                                        }
+                                    });
+                            }
+                        });
+                    </script>
+
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-12">
+                    <b>Lot # 001</b>
+                    <br>
+                    <h1 class="detail__title">
+                        <strong>IKASA® Pink Giant Teddy Bear - 39”</strong>
+                        <a class="awe-hidden awe-refresh-alert" onclick="location.reload(true);"
+                            title="This listing has been edited since the page was last loaded.  Click the icon to reload the page."><small
+                                class="glyphicon glyphicon-alert text-danger"></small></a>
+
+                        <span class="addOrRemoveWatchlist" data-watch-listingid="241860518" data-iswatching="False"
+                            data-nosnippet="">
+                            <button
+                                class="awe-rt-hideable awe-rt-ShowStatusActive awe-rt-ShowStatusPaused awe-rt-ShowStatusPreview btn btn-default btn-xs">
+                                <img class="icon__button--watchList" src="/Content/Images/bookmark-plus.svg">
+                                <span class="watchText__notWatching">Add to Watch List</span>
+                                <span class="watchText__isWatching">Watching</span>
+                            </button>
+                        </span>
+                        <a class="goToWatchListLink" href="/Account/Bidding/Watching">View Watchlist &gt;</a>
+
+                    </h1>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-12 col-sm-8">
+                    <div class="awe-rt-ListingActionMessage"></div>
+                    <div class="detail__context-wrapper ContextualStatus" id="ContextualStatus1" data-nosnippet="">
+
+
+                    </div>
+
+
+
+                    <script>
+                        $(document).ready(function () {
+                            $(".awe-end-early-link").click(function () {
+                                var jsEndEarlyConfirmMsg = //"Really end this lot early?\nTHIS ACTION CANNOT BE UNDONE"
+                                    'Really end this lot early?' + '\n'
+                                    + 'THIS ACTION CANNOT BE UNDONE';
+                                var targetHref = $(this).attr("href");
+                                BootstrapDialog.show({
+                                    type: 'type-danger',
+                                    title: '<span class="glyphicon glyphicon-warning-sign"></span>&nbsp; End Early Confirmation',
+                                    message: jsEndEarlyConfirmMsg,
+                                    buttons: [
+                                        {
+                                            label: 'End Early',
+                                            cssClass: 'btn-danger',
+                                            action: function () {
+                                                window.location = $.htmlDecode(targetHref);
+                                            }
+                                        }, {
+                                            label: 'Cancel',
+                                            action: function (dialogItself) {
+                                                dialogItself.close();
+                                            }
+                                        }
+                                    ]
+                                });
+                                return false;
+                            });
+                            $(".awe-delete-listing-link").click(function () {
+                                var jsDeleteConfirmMsg = //"Really delete this lot?\nTHIS ACTION CANNOT BE UNDONE"
+                                    'Really delete this lot?' + '\n'
+                                    + 'THIS ACTION CANNOT BE UNDONE';
+                                var targetHref = $(this).attr("href");
+                                BootstrapDialog.show({
+                                    type: 'type-danger',
+                                    title: '<span class="glyphicon glyphicon-warning-sign"></span>&nbsp; Delete Confirmation',
+                                    message: jsDeleteConfirmMsg,
+                                    buttons: [
+                                        {
+                                            label: 'Delete',
+                                            cssClass: 'btn-danger',
+                                            action: function () {
+                                                window.location = $.htmlDecode(targetHref);
+                                            }
+                                        }, {
+                                            label: 'Cancel',
+                                            action: function (dialogItself) {
+                                                dialogItself.close();
+                                            }
+                                        }
+                                    ]
+                                });
+                                return false;
+                            });
+
+                            //initial update Listing "Options" dropdown
+
+                            $('[data-listingid="241860518"] .awe-rt-ShowStatusActive').each(function () {
+                                $(this).show();
+                            });
+                        });
+                    </script>
+
+
+                    <div class="detail__imageContainer">
+
+                        <div onclick="document.getElementById('img_241859924').click()">
+                            <span class="image-tag-type bg-primary image-tag-type-Stock">Stock Image</span>
+                            <img id="previewimg" class="img-responsive" data-image-type="Stock"
+                                src="https://rosehillonline.blob.core.windows.net/assets/media/fddf6a2d-8ce6-492e-b864-080df148b2c1_largesize.jpg"
+                                alt="Listing Image">
+                        </div>
+                        <div class="detail__allImages">
+                            <a onclick="$('html, body').animate({scrollTop: $('#AllImages').offset().top}, 1000);">View
+                                All Images (10)</a>
+                        </div>
+                    </div>
+                    <!-- #region RO::: Phase 13 - Customization -->
+                    <div class="text-primary text-center mb-5"><strong>Condition : BRAND NEW</strong></div>
+                    <!-- #endregion RO::: Phase 13 - Customization -->
+                </div>
+                <div class="col-xs-12 col-sm-4 detail__biddingColumn">
+                    <span class="detail__status-label awe-rt-ColoredStatus" data-nosnippet="">
+                        <span class="label label-info">Active</span>
+
+                    </span>
+                    <div class="detail__countdownTimer">
+                        <div class="countdownLabel">Remaining Time</div>
+                        <div class="countdownTime">
+                            <span
+                                class="awe-hidden awe-rt-ShowStatusPaused awe-rt-HideOnStart text-warning">Paused</span>
+                            <span class="awe-rt-ShowStatusActive awe-rt-HideStatusPaused">
+                                <span class="awe-rt-Extended" data-epoch="ending"
+                                    data-end-hide-selector="[data-listingid='241860518'] .awe-rt-HideOnEnd"
+                                    data-end-show-selector="[data-listingid='241860518'] .awe-rt-ShowOnEnd"
+                                    data-action-time="12/30/2025 17:30:00" data-end-value="Ended"
+                                    data-action-milliseconds="1767133800000">1 Day 01:45:18</span>
+                            </span>
+                        </div>
+                    </div>
+
+
+
+                    <div class="detail__submit-wrapper awe-rt-hideable awe-rt-ShowStatusPaused awe-hidden">
+                        <div class="detail__priceLabels">
+                            <div>
+                                Current Price </div>
+                        </div>
+                        <div class="detail__priceData">
+                            <div>
+                                <span class="detail__price--current Bidding_Current_Price awe-rt-CurrentPrice">
+
+                                    $<span class="NumberPart">15.00</span> CAD
+                                    <span style="color: blue; margin-left: 5px; font-weight: bold;">
+                                        ($19.66)</span></span>
+                                <div id="convertedpricePause" class="awe-hidden" style="display: none;">
+                                    (<span class="Bidding_Local_Price" data-currency="CAD">
+
+                                    </span>)
+                                </div>
+                            </div>
+                            <div>
+                                <a href="/Listing/History/241860518?currency=CAD">
+                                    <span class="awe-rt-AcceptedListingActionCount"
+                                        data-previous-value="17">17</span>&nbsp;Bid(s)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="awe-rt-BuyBox ">
+
+                        <form action="/Listing/ConfirmAction" id="actionForm" method="get"><input data-val="true"
+                                data-val-number="The field Int64 must be a number."
+                                data-val-required="The Int64 field is required." id="ListingID" name="ListingID"
+                                type="hidden" value="241860518"><input id="ListingType" name="ListingType" type="hidden"
+                                value="Auction">
+
+                            <script>
+                                function checkValues() {
+                                    if ($("input[name='BidAmount']").val() == "") {
+                                        return false;
+                                    } else {
+                                        return true;
+                                    }
+                                }
+                            </script>
+
+                            <div class="detail__priceLabels">
+                                <div>Current Price</div>
+                            </div>
+                            <div class="detail__priceData">
+                                <div>
+                                    <span class="detail__price--current Bidding_Current_Price awe-rt-CurrentPrice">
+
+                                        $<span class="NumberPart">15.00</span> CAD
+                                        <span style="color: blue; margin-left: 5px; font-weight: bold;">
+                                            ($19.66)</span></span>
+                                </div>
+                                <div class="detail__bidsContainer">
+                                    <a href="/Listing/History/241860518?currency=CAD">
+                                        <span class="awe-rt-AcceptedListingActionCount"
+                                            data-previous-value="17">17</span>&nbsp;Bid(s)
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1 justify-space-between">
+                                <div class="flex-1">
+
+
+                                    <div class="detail__feeData">
+                                        <div class="detail__fee">+ 16.00% Buyer's Premium</div>
+
+                                    </div>
+
+
+                                </div>
+                                <div>
+
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning alert-xs detail__biddermax awe-hidden">
+                                Your Maximum Bid Is
+                                <span id="MaxBid">
+                                    $<span class="NumberPart">0.00</span> CAD
+                                    <span style="color: blue; margin-left: 5px; font-weight: bold;">
+                                        ($0.00)</span></span>
+                            </div>
+
+                            <button type="button" id="PlaceQuickBid" class="btn btn-danger btn-block awe-rt-MinimumBid">
+                                Quick Bid $<span class="NumberPart">16.00</span> CAD
+                                <span style="color: blue; margin-left: 5px; font-weight: bold;">
+                                    ($20.97)</span></button>
+
+                            <div class="alert alert-warning alert-xs bidPurchaseDisclaimer">
+                                Rosehill Online Auctions will bid incrementally for you up to your maximum bid. Your
+                                maximum bid is kept a secret from other users.
+                            </div>
+
+                            <div class="form-group">
+                                <div class="input-group"><span class="input-group-addon">$</span><input
+                                        autocomplete="off" class="form-control" id="BidAmount" name="BidAmount"
+                                        type="text" value=""><span class="input-group-addon">CAD</span></div>
+                                <div class="detail__minbid">
+                                    Minimum Bid
+                                    <span class="Bidding_Listing_MinPrice awe-rt-MinimumBid">
+
+                                        $<span class="NumberPart">16.00</span> CAD
+                                        <span style="color: blue; margin-left: 5px; font-weight: bold;">
+                                            ($20.97)</span></span>
+
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <input id="SubmitBid" type="submit" class="btn btn-success btn-block"
+                                    onclick="return checkValues()" value="Submit Max Bid">
+                            </div>
+
+                            <div class="detail__submit-wrapper">
+                                <div class="row">
+                                    <div class="col-xs-12">
+
+                                        <div class="form-group awe-rt-BuyItNowContainer awe-hidden">
+                                            <div class="text-or"><span>Or</span></div>
+                                            <input id="BuyItNow" name="BuyItNow" type="hidden" value="False">
+                                            <button type="submit" class="btn btn-default btn-block detail__submit--BIN"
+                                                name="BINButton" id="BINButton">
+                                                Buy Now
+                                                <span class="awe-rt-BuyNowPrice">
+                                                    $<span class="NumberPart">0.00</span> CAD
+                                                    <span style="color: blue; margin-left: 5px; font-weight: bold;">
+                                                        ($0.00)</span></span>
+                                            </button>
+                                        </div>
+
+                                        <div class="form-group awe-rt-MakeOfferContainer awe-hidden">
+                                            <div class="text-or"><span>Or</span></div>
+                                            <button type="submit" class="btn btn-default btn-block" name="MakeOffer"
+                                                id="MakeOffer">Make Offer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                $(document).ready(function () {
+                                    $(document).on("SignalR_ListingActionResponse", function (event, data) {
+                                        if ($.inArray(data.Action_ListingID, interestingListings) >= 0) {
+                                            //console.log("SignalR_ListingActionResponse data:", data);
+                                            if (data.Accepted || data.ReasonCode == 29) {
+                                                $(".detail__biddermax").show();
+                                                $("#MaxBid span.NumberPart").html(Globalize.formatNumber(data.Action_ProxyAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                                $("#MaxBid span.NumberPart").pulse();
+                                            }
+                                        }
+                                    });
+
+                                    $(document).on("SignalR_UpdateListingAction", function (event, data) {
+                                        if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                                        //Update Increment
+                                        $('[data-listingid="' + data.ListingID + '"] .awe-rt-Increment span.NumberPart').each(function () {
+                                            $(this).html(Globalize.formatNumber(data.Increment, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                            $(this).pulse();
+                                        });
+
+                                        //Update Minimum Bid
+                                        $('[data-listingid="' + data.ListingID + '"] .awe-rt-MinimumBid span.NumberPart').each(function () {
+                                            if (data.AcceptedActionCount > 0) {
+                                                $(this).html(Globalize.formatNumber(data.NextPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                            } else {
+                                                $(this).html(Globalize.formatNumber(data.Price, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                            }
+                                            $(this).pulse();
+                                        });
+
+                                        //show minimum bid math if applicable
+                                        if (data.AcceptedActionCount > 0) {
+                                            $('[data-listingid="' + data.ListingID + '"] .awe-rt-MinimumBidMath').each(function () {
+                                                $(this).show();
+                                            });
+                                        }
+                                    });
+
+                                    buyNowPriceForJS = "0.00";
+
+                                    $("#SubmitBid").on("click", function () {
+                                        $("input[name='BuyItNow']").val("false");
+                                    })
+
+                                    $("#BINButton").click(function () {
+                                        $("input[name='BuyItNow']").val("true");
+                                        $("input[name='BidAmount']").val(buyNowPriceForJS);
+                                    });
+
+                                    $("#PlaceQuickBid").on("click", function (event) {
+                                        event.preventDefault();
+                                        var minBidVal = $('[data-listingid="241860518"] .awe-rt-MinimumBid span.NumberPart').first().html();
+                                        minBidVal = minBidVal.replace(/&nbsp;/g, ' ');//replace any '&nbsp;' characters with a space, to support numeric formats that use a space for the thousands separator            $("#BidAmount").val(minBidVal);
+                                        $("#BidAmount").val(minBidVal);
+                                        $("#SubmitBid").click();
+                                    });
+                                });
+                            </script>
+                            <div id="google-price-input" style="margin-top: 10px;"><input type="number"
+                                    id="custom-price-input" placeholder="Enter custom price"
+                                    style="margin-right: 10px;"><button style="cursor: pointer;">Save Price</button>
+                                <div id="saved-price-display" style="margin-top: 10px; color: red; font-weight: bold;">
+                                    No price saved yet</div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <script>
+                        var failsafe_reload_after_bid_delay_ms = 10000; //default: 10000 = 10 seconds
+                        var actionsSubmittedCount = 0;
+                        var actionResponsesCount = 0;
+                        var confirmationDialog;
+                        $(document).ready(function () {
+
+                            confirmationDialog = new BootstrapDialog({
+                                title: 'IKASA&#174; Pink Giant Teddy Bear - 39” &nbsp;<em>(241860517)</em>',
+                                message: '<img src="Content/Images/progress-wheel.gif" />',
+                                autodestroy: false,
+                                closable: false
+                            });
+
+                            confirmationDialog.realize();
+                            confirmationDialog.getModalFooter().hide();
+
+                            $(document).on('click', '#modalCancelButton', function (event) {
+                                event.preventDefault();
+                                $("#BidAmount").val("");//clear bid amount input
+                                $('input[name="large-bid-confirmed"]').remove();
+                                confirmationDialog.close();
+                            });
+
+                            $(document).on('click', '#modalConfirmLargeBidButton', function (event) {
+                                event.preventDefault();
+                                var confBidAmt = $('input[name="ConfBidAmt"]:checked').val();
+                                if (confBidAmt) {
+                                    //update bid amount if necessary, and re-sumbit
+                                    $("#BidAmount").val(confBidAmt);
+                                    $("#actionForm")
+                                        .append('<input type="hidden" name="large-bid-confirmed" value="1" />')
+                                        .submit();
+                                }
+                            });
+
+                            $(document).on('click', '#modalSubmitButton', function (event) {
+                                event.preventDefault();
+                                var fullurl = "/Listing/Action" + "?" + $("#actionForm").serialize();
+                                confirmationDialog.getModalBody().html('<img src="Content/Images/progress-wheel.gif" />');
+
+
+                                //if a listing action response is not received after 10 seconds for whatever reason, reload the page
+                                actionsSubmittedCount++;
+                                var expectedResponseCount = actionsSubmittedCount;
+                                setTimeout(function () {
+                                    //console.log("actionsSubmittedCount, expectedResponseCount, actionResponsesCount: ", actionsSubmittedCount, expectedResponseCount, actionResponsesCount);
+                                    if (expectedResponseCount > actionResponsesCount) {
+
+                                        var connectionStatus = $("#SignalRStatus").children("div").first().attr("title");
+                                        write_log({
+                                            title: "Bid response too slow",
+                                            message: "detail page reloaded"
+                                            , "Listing ID": "241860518"
+                                            , "URL": document.location.href
+                                            , "Timeout MS": failsafe_reload_after_bid_delay_ms
+                                            , "UserAgent": navigator.userAgent
+                                            , "Actions Submitted": actionsSubmittedCount
+                                            , "Action Responses": actionResponsesCount
+                                            , "Conneciton Status": connectionStatus
+                                        });
+                                        //console.log("page reload triggered.");
+                                        window.location.reload(true);
+                                    }
+                                }, failsafe_reload_after_bid_delay_ms);
+
+                                $.ajax({
+                                    url: fullurl,
+                                    cache: false
+                                });
+
+                            });
+
+                            $(document).on("SignalR_ListingActionResponse", function (event, data) {
+                                if ($.inArray(data.Action_ListingID, interestingListings) < 0) return;
+
+                                actionResponsesCount++;
+
+                                //clear out all all visible inputs since this action has now been processed
+                                $("input[type=number]:visible").val("");
+                                $("input[type=text]:visible").val("");
+                                $("textarea:visible").val("");
+                                $('input[name="large-bid-confirmed"]').remove();
+
+                                confirmationDialog.close();
+                            });
+
+                            $(document).on("SignalR_UpdateListingStatus", function (event, data) {
+                                if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                                confirmationDialog.close();
+                            });
+
+                            $("#actionForm").submit(function (event) {
+                                event.preventDefault();
+                                var fullurl = $(this).attr("action") + "Modal";
+                                confirmationDialog.open();
+                                confirmationDialog.getModalBody().html('<img src="Content/Images/progress-wheel.gif" />');
+                                $.ajax({
+                                    url: fullurl,
+                                    type: "get",
+                                    cache: false,
+                                    data: $(this).serialize(),
+                                    success: function (data) {
+                                        if (data.indexOf("LOGON_NEEDED") >= 0) {
+                                            //not logged in -- redirect
+                                            $.cookie("continueActionData", $("#actionForm").serialize(), { path: "/", expires: 1 });
+                                            var retUrl = "/Event/LotDetails/241860517/IKASA-Pink-Giant-Teddy-Bear-39";
+                                            var logonUrl = "/Account/LogOn" + "?returnUrl=" + encodeURIComponent(retUrl);
+                                            window.location.replace(logonUrl);
+                                        } else if (data.indexOf("CC_NEEDED_FEES") >= 0) {
+                                            //cedit card req'd -- redirect
+                                            var retUrl = "/Event/LotDetails/241860517/IKASA-Pink-Giant-Teddy-Bear-39";
+                                            var addCardUrl = "/Account/AddCard?SellerID=0" + "&returnUrl=" + encodeURIComponent(retUrl);
+                                            window.location.replace(addCardUrl);
+                                        } else if (data.indexOf("CC_NEEDED") >= 0) {
+                                            //cedit card req'd -- redirect
+                                            //$.cookie("continueActionData", $("#actionForm").serialize(), { path: "/", expires: 1 });
+                                            var retUrl = "/Event/LotDetails/241860517/IKASA-Pink-Giant-Teddy-Bear-39";
+                                            var addCardUrl = "/Account/AddCard?SellerID=1" + "&returnUrl=" + encodeURIComponent(retUrl);
+                                            window.location.replace(addCardUrl);
+                                        } else {
+                                            //proceed with bidding modal
+                                            confirmationDialog.getModalBody().html(data).each(function () { AssignModalFormToAjax(); });
+                                        }
+                                    }
+                                });
+                            });
+                            function AssignModalFormToAjax() {
+                                var resultForm = confirmationDialog.getModalBody().find("form");
+                                resultForm.submit(function (event) {
+                                    event.preventDefault();
+                                    confirmationDialog.getModalBody().html('<img src="Content/Images/progress-wheel.gif" />');
+                                    $.ajax({
+                                        url: resultForm.attr("action"),
+                                        type: "post",
+                                        async: true,
+                                        data: resultForm.serialize(),
+                                        success: function (data) {
+                                            confirmationDialog.getModalBody().html(data);
+                                            AssignModalFormToAjax();
+                                        }
+                                    });
+                                });
+                            }
+
+                            $(document).on("SignalR_Started", function () {
+                                var serializedActionData = $.cookie("continueActionData");
+                                if (!(serializedActionData == null || serializedActionData == "")) {
+                                    var continueActionData = ParseActionData(serializedActionData.toString());
+                                    for (var qiKey in continueActionData) {
+                                        var qiValue = continueActionData[qiKey];
+                                        $("#actionForm").find("#" + qiKey).val(qiValue);
+                                    }
+                                    $.cookie('continueActionData', "", { path: '/', expires: 0 });
+                                }
+                            });
+
+                            function ParseActionData(serializedActionData) {
+                                var result = new Array();
+                                var kvPairs = serializedActionData.split('&');
+                                for (var i = 0; i < kvPairs.length; i++) {
+                                    var kvPair = kvPairs[i].split('=');
+                                    result[kvPair[0]] = decodeURIComponent(replaceAll(kvPair[1], "+", " "));
+                                }
+                                return result;
+                            }
+
+                        });
+
+                    </script>
+
+                    <script>
+                        $(document).ready(function () {
+                            if ($.cookie('currency') == 'CAD') {
+                                $("#convertedprice").hide();
+                                $("#convertedpricePause").hide();
+                            } else {
+                                $("#convertedprice").show();
+                                $("#convertedpricePause").show();
+                            }
+                        });
+                    </script>
+
+
+                    <script>
+                        var reserveStatus = {};
+                        var buyNowPriceForJS = "";
+                        var anyActivity = false;
+
+                        $(document).ready(function () {
+                            $(document).on("SignalR_ListingActionResponse", function (event, data) {
+                                if ($.inArray(data.Action_ListingID, interestingListings) >= 0) {
+                                    if (data.Accepted) {
+                                        anyActivity = true;
+                                    }
+                                }
+                            });
+
+                            //when this auction's price changes
+                            $(document).on("SignalR_UpdateListingAction", function (event, data) {
+                                if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                                //handle Custom Updates Status Changes
+                                var buyNowAvailable = data.Properties["BuyNowStatus"] == "true";
+                                var buyNowPrice = data.Properties["BuyNowPrice"];
+                                var reserveDefined = data.Properties["ReserveDefined"] == "true";
+                                var reserveMet = data.Properties["ReserveMet"] == "true";
+                                var makeOfferAvailable = data.Properties["MakeOfferStatus"] == "true";
+
+                                //update reserve status
+                                if (reserveDefined) {
+                                    if (reserveMet) {
+                                        $(".awe-rt-ReserveStatus").html(reserveStatus["ReserveMet"]);
+                                    } else {
+                                        $(".awe-rt-ReserveStatus").html(reserveStatus["ReserveNotMet"]);
+                                    }
+                                } else {
+                                    $(".awe-rt-ReserveStatus").html(reserveStatus["NoReserve"]);
+                                }
+                                $(".awe-rt-ReserveStatus").pulse();
+
+                                //update Buy Now Status
+                                if (buyNowAvailable) {
+                                    $(".awe-rt-BuyItNowContainer").show();
+                                    $(".awe-rt-BuyItNowAvailable").pulse();
+                                    $(".awe-rt-BuyNowPrice").pulse();
+                                } else {
+                                    $(".awe-rt-BuyItNowContainer").hide();
+                                }
+
+                                //update Make Offer Status
+                                if (makeOfferAvailable) {
+                                    $(".awe-rt-MakeOfferContainer").show();
+                                    $("#MakeOffer").pulse();
+                                } else {
+                                    $(".awe-rt-MakeOfferContainer").hide();
+                                }
+
+                                //update Buy Now Price
+                                $('.awe-rt-BuyNowPrice span.NumberPart').each(function () {
+                                    buyNowPriceForJS = Globalize.formatNumber(parseFloat(buyNowPrice), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    $(this).html(buyNowPriceForJS);
+                                    $(this).pulse();
+                                });
+
+                                //if # of bids is > 0
+                                if (data.AcceptedActionCount > 0) {
+                                    //show bid history button and high bidder
+                                    $(".BidHistoryButton").removeClass("awe-hidden");
+                                    $(".HighBidder").html(data.CurrentListingActionUserName);
+                                    $(".HighBidderRow").removeClass("awe-hidden");
+                                    $(".HighBidder").pulse();
+                                }
+
+                                //if the current user is logged in
+                            });
+
+                            //if End DTTM is updated because of sniper protection, show Extended
+                            $(document).on("SignalR_UpdateListingDTTM", function (event, data) {
+                                if ($.inArray(data.ListingID, interestingListings) < 0) return;
+
+                                if (data.Epoch == "ending" && (data.Source == "SOFT_ORIGIN") || data.Source == "EXTENDSINGLE_ORIGIN") {
+                                    $(".awe-rt-Extended").show();
+                                    $(".awe-rt-Extended").pulse();
+                                }
+                            });
+
+                            //auction specific context messages
+                            contextMessageDictionary["UNKNOWN"] = "UNKNOWN";
+                            contextMessageDictionary["LISTING_NOT_STARTED"] = "This listing has not started.";
+                            contextMessageDictionary["LISTING_DELETED"] = "This listing was deleted.";
+                            contextMessageDictionary["LISTING_AWAITING_PAYMENT"] = "This listing will not start until insertion fees are paid.";
+                            contextMessageDictionary["WINNING"] = "You are currently winning this item!";
+                            contextMessageDictionary["CURRENT_HIGH_BIDDER_RESERVE_NOT_MET"] = "You are the current high bidder, but the reserve price has not been met.";
+                            contextMessageDictionary["LOSING"] = "You are not the high bidder.  You can increase your bid at any time.";
+                            contextMessageDictionary["NO_ACTIVITY_AS_BUYER"] = "You have not bid on this item.";
+                            contextMessageDictionary["WON"] = "You have won this item!";
+                            contextMessageDictionary["LOST_RESERVE_NOT_MET"] = "The reserve price was not met.  You did not win this item.";
+                            contextMessageDictionary["LOST"] = "You did not win this item.";
+                            contextMessageDictionary["NO_ACTIVITY"] = "You don\'t have any activity with this item.";
+                            contextMessageDictionary["NOSALE"] = "This item did not sell.";
+                            contextMessageDictionary["SOLD"] = "This item sold!";
+                            contextMessageDictionary["NO_ACTIVITY_AS_SELLER"] = "This item does not have any bid activity.";
+                            contextMessageDictionary["RESERVE_NOT_MET"] = "This item has bids, however the reserve has not been met.";
+                            contextMessageDictionary["RESERVE_NOT_MET_AS_SELLER"] = "This item has bids, however the reserve has not been met.";
+                            contextMessageDictionary["WOULD_SELL"] = "A bidder is winning this item!";
+                            contextMessageDictionary["NOTCURRENTLISTINGACTIONUSER"] = "You are NOT currently winning this item!";
+                            contextMessageDictionary["LOT_ENDING"] = "Lot ending is currently processing, please wait.";
+
+                            contextMessageDictionary["ActionSuccess"] = "Your bid has been submitted.";
+
+                            //offer messages
+                            contextMessageDictionary["ENDED_WITH_OFFER_ACCEPTED"] = "Item ended with accepted offer";
+                            contextMessageDictionary["YOUR_OFFER_ACCEPTED"] = "Your offer was accepted";
+                            contextMessageDictionary["YOUR_OFFER_DECLINED"] = "Your offer was declined";
+                            contextMessageDictionary["YOU_HAVE_PENDING_OFFER"] = "You have an offer awaiting your response";
+
+                            //for handling a paused event
+                            contextMessageDictionary["LISTING_PAUSED"] = "PAUSED";
+
+                            //auction specific reserve messages
+                            reserveStatus["NoReserve"] = "<span class=\"text-success\">No Reserve </span>";
+                            reserveStatus["ReserveNotMet"] = "<span class=\"text-danger\">Reserve Price Not Met</span>";
+                            reserveStatus["ReserveMet"] = "<span class=\"text-success\">Reserve Price Met</span>";
+                        });
+                    </script>
+
+
+                    <div class="a2a_kit a2a_kit_size_32 a2a_default_style" id="my_centered_buttons"
+                        style="display: flex; justify-content: center; padding: 10px; line-height: 32px;"><a
+                            class="a2a_button_facebook" target="_blank" rel="nofollow noopener" href="/#facebook"><span
+                                class="a2a_svg a2a_s__default a2a_s_facebook"
+                                style="background-color: rgb(8, 102, 255);"><svg focusable="false" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+                                    <path fill="#fff"
+                                        d="M28 16c0-6.627-5.373-12-12-12S4 9.373 4 16c0 5.628 3.875 10.35 9.101 11.647v-7.98h-2.474V16H13.1v-1.58c0-4.085 1.849-5.978 5.859-5.978.76 0 2.072.15 2.608.298v3.325c-.283-.03-.775-.045-1.386-.045-1.967 0-2.728.745-2.728 2.683V16h3.92l-.673 3.667h-3.247v8.245C23.395 27.195 28 22.135 28 16">
+                                    </path>
+                                </svg></span><span class="a2a_label">Facebook</span></a><a class="a2a_button_twitter"
+                            target="_blank" rel="nofollow noopener" href="/#twitter"><span
+                                class="a2a_svg a2a_s__default a2a_s_twitter"
+                                style="background-color: rgb(29, 155, 240);"><svg focusable="false" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+                                    <path fill="#FFF"
+                                        d="M28 8.557a10 10 0 0 1-2.828.775 4.93 4.93 0 0 0 2.166-2.725 9.7 9.7 0 0 1-3.13 1.194 4.92 4.92 0 0 0-3.593-1.55 4.924 4.924 0 0 0-4.794 6.049c-4.09-.21-7.72-2.17-10.15-5.15a4.94 4.94 0 0 0-.665 2.477c0 1.71.87 3.214 2.19 4.1a5 5 0 0 1-2.23-.616v.06c0 2.39 1.7 4.38 3.952 4.83-.414.115-.85.174-1.297.174q-.476-.001-.928-.086a4.935 4.935 0 0 0 4.6 3.42 9.9 9.9 0 0 1-6.114 2.107q-.597 0-1.175-.068a13.95 13.95 0 0 0 7.55 2.213c9.056 0 14.01-7.507 14.01-14.013q0-.32-.015-.637c.96-.695 1.795-1.56 2.455-2.55z">
+                                    </path>
+                                </svg></span><span class="a2a_label">Twitter</span></a><a class="a2a_button_pinterest"
+                            target="_blank" rel="nofollow noopener" href="/#pinterest"><span
+                                class="a2a_svg a2a_s__default a2a_s_pinterest"
+                                style="background-color: rgb(230, 0, 35);"><svg focusable="false" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+                                    <path fill="#fff"
+                                        d="M15.995 4C9.361 4 4 9.37 4 15.995c0 5.084 3.16 9.428 7.622 11.176-.109-.948-.198-2.41.039-3.446.217-.938 1.402-5.963 1.402-5.963s-.356-.72-.356-1.777c0-1.668.968-2.912 2.172-2.912 1.027 0 1.52.77 1.52 1.688 0 1.027-.65 2.567-.996 3.998-.287 1.195.602 2.172 1.777 2.172 2.132 0 3.771-2.25 3.771-5.489 0-2.873-2.063-4.877-5.015-4.877-3.416 0-5.42 2.557-5.42 5.203 0 1.027.395 2.132.888 2.735a.36.36 0 0 1 .08.345c-.09.375-.297 1.195-.336 1.363-.05.217-.178.266-.405.158-1.481-.711-2.409-2.903-2.409-4.66 0-3.781 2.745-7.257 7.928-7.257 4.156 0 7.394 2.962 7.394 6.931 0 4.137-2.606 7.464-6.22 7.464-1.214 0-2.36-.632-2.744-1.383l-.75 2.854c-.267 1.046-.998 2.35-1.491 3.149a12 12 0 0 0 3.554.533C22.629 28 28 22.63 28 16.005 27.99 9.37 22.62 4 15.995 4">
+                                    </path>
+                                </svg></span><span class="a2a_label">Pinterest</span></a><a class="a2a_dd"
+                            href="https://www.addtoany.com/share#url=https%3A%2F%2Frosehillonline.ca%2FEvent%2FLotDetails%2F241860517%2FIKASA-Pink-Giant-Teddy-Bear-39&amp;title=Rosehill%20Online%20Auctions%20-%20IKASA%C2%AE%20Pink%20Giant%20Teddy%20Bear%20-%2039%E2%80%9D"><span
+                                class="a2a_svg a2a_s__default a2a_s_a2a"
+                                style="background-color: rgb(1, 102, 255);"><svg focusable="false" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+                                    <g fill="#FFF">
+                                        <path d="M14 7h4v18h-4z"></path>
+                                        <path d="M7 14h18v4H7z"></path>
+                                    </g>
+                                </svg></span><span class="a2a_label a2a_localize"
+                                data-a2a-localize="inner,Share">Share</span></a>
+                        <div style="clear: both;"></div>
+                    </div>
+                    <script async="" src="https://static.addtoany.com/menu/page.js"></script>
+                    <div class="detail__additionalData" data-nosnippet="">
+
+
+
+                        <div class="detail__section detail__paymentInfo">
+                            <div class="detail__sectionHeading">
+                                Payment Options
+                            </div>
+                            <div class="detail__sectionBody">
+                                <p>
+                                    Seller Accepts Credit Cards<br>
+                                </p>
+                                <p>
+                                    All invoices are automatically charged to your registered credit card immediately
+                                    after the event ends. You will receive a paid invoice if the payment is successful.
+                                    You can update credit card information by signing into your account and going to My
+                                    Account Home and finding the link to credit card and invoices. Please contact us if
+                                    you are having challenges paying the invoice. All invoices must be paid in full
+                                    within 7 days of the auction closing date.
+                                </p>
+
+                            </div>
+                        </div>
+
+
+                        <p></p>
+                        <hr>
+                        <p></p>
+                        <p>
+                            Lot # 001
+                            <br>
+                            System ID # 241860517
+                        </p>
+                        <p>
+                            <b>Start Date</b>
+                            <span class="awe-rt-startingDTTM" data-initial-dttm="12/26/2025 10:00:00">Friday, December
+                                26, 2025 10:00 AM</span>
+                            <br>
+                            <b>End Date</b>
+                            <span class="awe-rt-endingDTTM" data-initial-dttm="12/30/2025 17:30:00">Tuesday, December
+                                30, 2025 5:30 PM</span>
+                        </p>
+                        <p>15&nbsp;Watching</p>
+
+
+                        <p>
+                            <a href="/Listing/History/241860518?currency=CAD">
+                                Bid/Purchase History &gt;
+                            </a>
+                        </p>
+
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-8 detail__detailsColumn">
+                    <div class="detail__section">
+                        <div class="detail__sectionHeading">
+                            Description
+                        </div>
+                        <div class="detail__sectionBody description">
+                            <ul>
+                                <li>Super Giant Measures 39 inch Tall (From Ears To Toe): IKASA is a brand focusing on
+                                    producing giant stuffed animal toys, our classic design teddy bear will never be
+                                    old-fashioned, it's giant and it can accompany you for a long time.Just click our
+                                    brand name and enter into the store to get a lovely toy for your loved ones.&nbsp;
+                                </li>
+                                <li>Super Soft And Very Plush: IKASA teddy bear is both durable and incredibly soft to
+                                    the touch and hug, we did every detail well to make our teddy bears perfect.&nbsp;
+                                </li>
+                                <li>Premium Quality: Our teddy bears have passed EN71 and ASTM test, so please feel free
+                                    to buy and use our teddy bears.&nbsp;</li>
+                                <li>Vacuum Package: Once you break the seal, the toy will start to expand immediately!
+                                    Shake it and put it in the sun for a few days, it will fat like the picture.&nbsp;
+                                </li>
+                                <li>Surface-washable Construction For Easy Cleaning: Please don't put the teddy bear in
+                                    the washing machine, that will tear it up.You just need a soft brush and a bottle of
+                                    cleanser to clean it.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="detail__section">
+                        <div class="detail__sectionHeading">
+
+                        </div>
+                        <div class="detail__sectionBody">
+                            <div class="detail__cfContainer">
+                                <div class="detail__cfUnit">
+                                    <div class="detail__cfName">Packaging</div>
+                                    <div class="detail__cfValue">
+                                        Original Packaging (Good Condition)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="detail__section">
+                        <div class="detail__sectionHeading">
+                            Condition Defined
+                        </div>
+                        <div class="detail__sectionBody">
+                            <p>The item appears untouched although the packaging could be opened or seal broken by
+                                Rosehill Online to verify its condition. The packaging is the original packaging but may
+                                not be in perfect condition. No parts are missing and packing material is present.</p>
+                        </div>
+                    </div>
+
+                    <div class="detail__section" id="AllImages">
+                        <div class="detail__sectionHeading">
+                            Photo Gallery
+                        </div>
+                        <div class="detail__sectionBody detail__imageThumbnails">
+
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241859924"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/fddf6a2d-8ce6-492e-b864-080df148b2c1_largesize.jpg"
+                                    data-image-type="Stock">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Stock">Stock
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/fddf6a2d-8ce6-492e-b864-080df148b2c1_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Stock"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241859965"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/59afc4f3-c51b-48be-9d9b-00befcdea684_largesize.jpg"
+                                    data-image-type="Stock">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Stock">Stock
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/59afc4f3-c51b-48be-9d9b-00befcdea684_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Stock"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860006"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/c27aa644-a27d-4f65-ab1a-7b33676773ad_largesize.jpg"
+                                    data-image-type="Stock">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Stock">Stock
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/c27aa644-a27d-4f65-ab1a-7b33676773ad_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Stock"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860048"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/c10feb66-bfa3-4220-8555-fad0df393dd4_largesize.jpg"
+                                    data-image-type="Stock">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Stock">Stock
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/c10feb66-bfa3-4220-8555-fad0df393dd4_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Stock"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860089"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/3a498a1f-18ba-46cb-8252-b8082ccec6dc_largesize.jpg"
+                                    data-image-type="Stock">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Stock">Stock
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/3a498a1f-18ba-46cb-8252-b8082ccec6dc_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Stock"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860130"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/f316c456-a515-40c6-afd3-7493728ebbe4_largesize.jpg"
+                                    data-image-type="Stock">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Stock">Stock
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/f316c456-a515-40c6-afd3-7493728ebbe4_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Stock"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860194"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/97598d1c-5fbb-491b-a44c-3c1999cdc248_largesize.jpg"
+                                    data-image-type="Actual">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Actual">Actual
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/97598d1c-5fbb-491b-a44c-3c1999cdc248_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Actual"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860243"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/10ee7883-d32e-4e35-a17f-94019a1d856b_largesize.jpg"
+                                    data-image-type="Actual">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Actual">Actual
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/10ee7883-d32e-4e35-a17f-94019a1d856b_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Actual"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860285"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/22e1eeba-259d-43e1-98b9-ea9af64f327f_largesize.jpg"
+                                    data-image-type="Actual">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Actual">Actual
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/22e1eeba-259d-43e1-98b9-ea9af64f327f_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Actual"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                            <div>
+                                <a data-lightbox="lightbox" id="img_241860448"
+                                    href="https://rosehillonline.blob.core.windows.net/assets/media/91840d6b-581d-415d-9a6c-b3bfcc71e843_largesize.jpg"
+                                    data-image-type="Actual">
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <span class="thumbnail-img-tag bg-primary thumbnail-img-tag-Actual">Actual
+                                        Image</span>
+                                    <!-- #region RO::: Phase 13 - Customization -->
+                                    <img src="https://rosehillonline.blob.core.windows.net/assets/media/91840d6b-581d-415d-9a6c-b3bfcc71e843_thumbcrop.jpg"
+                                        class="img-responsive" id="LotImgPreview" data-image-type="Actual"
+                                        alt="Listing Image">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+
+            <div class="row">
+
+
+            </div>
+        </div>
+    </div>
+</main>

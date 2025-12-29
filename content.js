@@ -25,66 +25,87 @@ function applyPriceMultiplier() {
   });
 }
 
-// Function to add Google search button for the model number
-function addGoogleSearchButton(lotNumber) {
+// Function to get product identifier (model number or title)
+function getProductIdentifier() {
+  // First try to get model number
   const modelNumberLabel = Array.from(
-    document.querySelectorAll(".detail__field-name")
+    document.querySelectorAll(".detail__cfName")
   ).find((label) => label.textContent.includes("Model Number"));
-  let modelNumberElement = null;
 
   if (modelNumberLabel) {
-    modelNumberElement =
-      modelNumberLabel.parentElement.nextElementSibling.querySelector(
-        ".detail__field-value"
-      );
+    const modelNumberElement = modelNumberLabel.parentElement.querySelector(".detail__cfValue");
+    if (modelNumberElement) {
+      const modelNumber = modelNumberElement.textContent.trim();
+      if (modelNumber) {
+        return {
+          identifier: modelNumber,
+          type: "model",
+          element: modelNumberElement
+        };
+      }
+    }
   }
 
-  const modelNumber = modelNumberElement
-    ? modelNumberElement.textContent.trim()
-    : null;
-
-  if (modelNumber) {
-    const searchButton = document.createElement("button");
-    searchButton.textContent = "Search Model on Google";
-    searchButton.style.marginLeft = "10px";
-    searchButton.style.padding = "5px";
-    searchButton.style.backgroundColor = "#4285F4";
-    searchButton.style.color = "#fff";
-    searchButton.style.border = "none";
-    searchButton.style.cursor = "pointer";
-
-    searchButton.addEventListener("click", () => {
-      chrome.storage.local.set(
-        { currentModel: modelNumber, currentLot: lotNumber },
-        () => {
-          const searchQuery = encodeURIComponent(modelNumber);
-          const googleSearchUrl = `https://www.google.com/search?q=${searchQuery}`;
-          window.open(googleSearchUrl, "_blank");
-        }
-      );
-    });
-
-    modelNumberElement.parentNode.appendChild(searchButton);
+  // Fallback to product title
+  const titleElement = document.querySelector(".detail__title strong");
+  if (titleElement) {
+    const title = titleElement.textContent.trim();
+    if (title) {
+      return {
+        identifier: title,
+        type: "title",
+        element: titleElement
+      };
+    }
   }
+
+  return null;
+}
+
+// Function to add Google search button
+function addGoogleSearchButton(lotNumber) {
+  const productInfo = getProductIdentifier();
+
+  if (!productInfo) return;
+
+  const searchButton = document.createElement("button");
+  searchButton.textContent = productInfo.type === "model"
+    ? "Search Model on Google"
+    : "Search Product on Google";
+  searchButton.style.marginLeft = "10px";
+  searchButton.style.padding = "5px";
+  searchButton.style.backgroundColor = "#4285F4";
+  searchButton.style.color = "#fff";
+  searchButton.style.border = "none";
+  searchButton.style.cursor = "pointer";
+
+  searchButton.addEventListener("click", () => {
+    chrome.storage.local.set(
+      { currentModel: productInfo.identifier, currentLot: lotNumber },
+      () => {
+        const searchQuery = encodeURIComponent(productInfo.identifier);
+        const googleSearchUrl = `https://www.google.com/search?q=${searchQuery}`;
+        window.open(googleSearchUrl, "_blank");
+      }
+    );
+  });
+
+  productInfo.element.parentNode.appendChild(searchButton);
 }
 
 // Function to retrieve and display the Google price only if it exists
 function displayGooglePrice() {
-  const modelNumberElement = Array.from(
-    document.querySelectorAll(".detail__field-name")
-  ).find((label) => label.textContent.includes("Model Number"));
+  const productInfo = getProductIdentifier();
 
-  if (!modelNumberElement) return;
+  if (!productInfo) return;
 
-  const modelNumber = modelNumberElement.parentElement.nextElementSibling
-    .querySelector(".detail__field-value")
-    .textContent.trim();
+  const identifier = productInfo.identifier;
 
-  // Retrieve the price specific to this model
-  chrome.storage.local.get(modelNumber, (result) => {
-    const modelData = result[modelNumber];
-    if (modelData && modelData.googlePrice) {
-      const googlePrice = modelData.googlePrice;
+  // Retrieve the price specific to this product (by model number or title)
+  chrome.storage.local.get(identifier, (result) => {
+    const productData = result[identifier];
+    if (productData && productData.googlePrice) {
+      const googlePrice = productData.googlePrice;
 
       // Check if the price element already exists
       let googlePriceDiv = document.querySelector("#google-price-display");
@@ -112,8 +133,8 @@ function displayGooglePrice() {
 // Function to process the lot details and apply multiplier
 function processLotDetails() {
   const lotNumberElement = Array.from(
-    document.querySelectorAll(".detail__field-name")
-  ).find((label) => label.textContent.includes("Lot #"));
+    document.querySelectorAll("b")
+  ).find((b) => b.textContent.includes("Lot #"));
   if (lotNumberElement) {
     const lotNumber = lotNumberElement.textContent.trim().replace("Lot # ", "");
     applyPriceMultiplier();
