@@ -17,10 +17,15 @@ function applyPriceMultiplier() {
       updatedPriceElement.style.marginLeft = "5px";
       updatedPriceElement.style.fontWeight = "bold";
 
-      priceElement.parentNode.insertBefore(
-        updatedPriceElement,
-        priceElement.nextSibling.nextSibling
-      );
+      // Insert after the next sibling if it exists, otherwise append to parent
+      const nextSibling = priceElement.nextSibling;
+      const targetSibling = nextSibling ? nextSibling.nextSibling : null;
+
+      if (targetSibling) {
+        priceElement.parentNode.insertBefore(updatedPriceElement, targetSibling);
+      } else {
+        priceElement.parentNode.appendChild(updatedPriceElement);
+      }
     }
   });
 }

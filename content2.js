@@ -5,7 +5,18 @@ function displayCustomPrice() {
 
   const lotNum = lotNumberElement ? lotNumberElement.textContent.trim() : null;
 
-  const lotNumberOnly = lotNum ? lotNum.match(/\d+/)[0] : null;
+  if (!lotNum) {
+    console.log("No lot number found");
+    return;
+  }
+
+  const lotNumberMatch = lotNum.match(/\d+/);
+  const lotNumberOnly = lotNumberMatch ? lotNumberMatch[0] : null;
+
+  if (!lotNumberOnly) {
+    console.log("Could not extract lot number");
+    return;
+  }
 
   const goodLot = `lot${lotNumberOnly}`;
 

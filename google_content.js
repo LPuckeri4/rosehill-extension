@@ -68,14 +68,17 @@ function extractPrices() {
         if (!outerDiv) {
           outerDiv = listing.querySelector('[data-sncf="3"]');
         }
-        console.log(outerDiv.innerText);
-        const priceMatch = outerDiv.innerText.match(
-          /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/
-        );
-        if (priceMatch) {
-          console.log(priceMatch[0]);
-          amazonPrice = parseFloat(priceMatch[0].replace(/[$,]/g, ""));
-          break; // Stop as soon as we find an Amazon price
+
+        if (outerDiv && outerDiv.innerText) {
+          console.log(outerDiv.innerText);
+          const priceMatch = outerDiv.innerText.match(
+            /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/
+          );
+          if (priceMatch) {
+            console.log(priceMatch[0]);
+            amazonPrice = parseFloat(priceMatch[0].replace(/[$,]/g, ""));
+            break; // Stop as soon as we find an Amazon price
+          }
         }
       }
 
