@@ -116,27 +116,33 @@ function displayGooglePrice() {
   // Retrieve the price specific to this product (by model number or title)
   chrome.storage.local.get(identifier, (result) => {
     const productData = result[identifier];
-    if (productData && productData.googlePrice) {
-      const googlePrice = productData.googlePrice;
 
-      // Check if the price element already exists
-      let googlePriceDiv = document.querySelector("#google-price-display");
+    // Check if the price element already exists
+    let googlePriceDiv = document.querySelector("#google-price-display");
+
+    if (productData && productData.searchAttempted) {
+      // A search was attempted
       if (!googlePriceDiv) {
         // Create and append the Google price element if it doesn't exist
         const quickBidButton = document.querySelector("#PlaceQuickBid");
         if (quickBidButton) {
           googlePriceDiv = document.createElement("div");
           googlePriceDiv.id = "google-price-display"; // Unique ID to prevent duplicates
-          googlePriceDiv.style.color = "green";
           googlePriceDiv.style.fontWeight = "bold";
           googlePriceDiv.style.marginTop = "10px";
           quickBidButton.parentNode.appendChild(googlePriceDiv);
         }
       }
 
-      // Update the content of the Google price display
+      // Update the content based on whether a price was found
       if (googlePriceDiv) {
-        googlePriceDiv.textContent = `Google Price: $${googlePrice.toFixed(2)}`;
+        if (productData.googlePrice) {
+          googlePriceDiv.style.color = "green";
+          googlePriceDiv.textContent = `Google Price: $${productData.googlePrice.toFixed(2)}`;
+        } else {
+          googlePriceDiv.style.color = "orange";
+          googlePriceDiv.textContent = "No valid price found on Google";
+        }
       }
     }
   });

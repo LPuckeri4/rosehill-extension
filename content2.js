@@ -47,8 +47,14 @@ function displayCustomPrice() {
 
         // Create the save button
         const saveButton = document.createElement("button");
+        saveButton.type = "button"; // IMPORTANT: Prevent form submission
         saveButton.textContent = "Save Price";
         saveButton.style.cursor = "pointer";
+        saveButton.style.backgroundColor = "#28a745";
+        saveButton.style.color = "white";
+        saveButton.style.border = "none";
+        saveButton.style.padding = "5px 10px";
+        saveButton.style.borderRadius = "3px";
 
         // Create the display for the saved price
         const savedPriceDisplay = document.createElement("div");
@@ -69,7 +75,10 @@ function displayCustomPrice() {
         quickBidButton.parentNode.appendChild(priceInputDiv);
 
         // Save the price when the save button is clicked
-        saveButton.addEventListener("click", () => {
+        saveButton.addEventListener("click", (e) => {
+          e.preventDefault(); // Prevent any default behavior
+          e.stopPropagation(); // Stop event from bubbling up
+
           const customPrice = parseFloat(priceInput.value) || "";
           chrome.storage.local.set(
             {
