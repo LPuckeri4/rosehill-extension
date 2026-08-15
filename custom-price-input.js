@@ -25,7 +25,8 @@ function displayCustomPrice() {
   // Retrieve the saved price specific to this model
   chrome.storage.local.get(goodLot, (result) => {
     const lotData = result[goodLot];
-    const savedPrice = lotData?.customPrice || "";
+    // Use ?? rather than || so a legitimately saved price of 0 isn't dropped
+    const savedPrice = lotData?.customPrice ?? "";
 
     // Check if the price input element already exists
     let priceInputDiv = document.querySelector("#google-price-input");
@@ -62,7 +63,7 @@ function displayCustomPrice() {
         savedPriceDisplay.style.marginTop = "10px";
         savedPriceDisplay.style.color = "red"; // Make the text red
         savedPriceDisplay.style.fontWeight = "bold"; // Optional: Make the text bold
-        savedPriceDisplay.textContent = savedPrice
+        savedPriceDisplay.textContent = savedPrice !== ""
           ? `Saved Price: $${savedPrice}`
           : "No price saved yet";
 
@@ -79,7 +80,9 @@ function displayCustomPrice() {
           e.preventDefault(); // Prevent any default behavior
           e.stopPropagation(); // Stop event from bubbling up
 
-          const customPrice = parseFloat(priceInput.value) || "";
+          // Parsed separately from the fallback so a legitimately entered 0 is kept
+          const parsedPrice = parseFloat(priceInput.value);
+          const customPrice = isNaN(parsedPrice) ? "" : parsedPrice;
           chrome.storage.local.set(
             {
               [goodLot]: {
@@ -89,8 +92,10 @@ function displayCustomPrice() {
             },
             () => {
               // Update the display with the newly saved price
-              savedPriceDisplay.textContent = `Saved Price: $${customPrice}`;
-              alert(`Price saved: $${customPrice}`);
+              savedPriceDisplay.textContent = customPrice !== ""
+                ? `Saved Price: $${customPrice}`
+                : "No price saved yet";
+              alert(customPrice !== "" ? `Price saved: $${customPrice}` : "Enter a valid price before saving");
             }
           );
         });
@@ -99,4 +104,32 @@ function displayCustomPrice() {
   });
 }
 
-displayCustomPrice();
+// Checks whether the elements displayCustomPrice() needs are on the page yet
+function isLotDetailUiReady() {
+  const lotNumberElement = Array.from(
+    document.querySelectorAll("b")
+  ).find((b) => b.textContent.includes("Lot #"));
+  return Boolean(lotNumberElement && document.querySelector("#PlaceQuickBid"));
+}
+
+// Unlike price-calculator.js (which waits for window "load"), this script
+// used to run immediately at document_idle, so on pages that finish
+// rendering #PlaceQuickBid after that point, the custom price widget would
+// silently never appear. Wait for "load", then fall back to a short-lived
+// observer for pages that render later still.
+function initCustomPriceInput() {
+  if (isLotDetailUiReady()) {
+    displayCustomPrice();
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
+    if (isLotDetailUiReady()) {
+      observer.disconnect();
+      displayCustomPrice();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+window.addEventListener("load", initCustomPriceInput);

@@ -3,30 +3,265 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clear Prices</title>
+  <title>Rosehill Price Helper</title>
   <style>
+    :root {
+      --navy: #1e3a5f;
+      --navy-dark: #16293f;
+      --accent: #4285f4;
+      --danger: #d64545;
+      --danger-dark: #b83a3a;
+      --text: #202b38;
+      --text-muted: #6b7684;
+      --border: #e2e6ea;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --green: #2e9e5b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      padding: 10px;
+      width: 300px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
     }
-    button {
-      padding: 10px;
-      font-size: 16px;
-      background-color: #FF0000;
-      color: white;
-      border: none;
+
+    header {
+      background: linear-gradient(135deg, var(--navy), var(--navy-dark));
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header img {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 11px;
+      color: #b9c6d6;
+    }
+
+    main {
+      padding: 14px 16px 16px;
+    }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    section h2 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin: 0 0 10px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .toggle-row .label {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 0 3px;
+    }
+
+    .toggle-row .desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .switch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 38px;
+      height: 22px;
+      margin-top: 1px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
       cursor: pointer;
-      border-radius: 5px;
+      inset: 0;
+      background-color: #cdd4db;
+      transition: 0.15s;
+      border-radius: 999px;
     }
-    button:hover {
-      background-color: #cc0000;
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      top: 3px;
+      background-color: #fff;
+      transition: 0.15s;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider::before {
+      transform: translateX(16px);
+    }
+
+    .formula {
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .formula strong {
+      color: var(--text);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+    }
+
+    .action-row + .action-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .action-row .label {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 0 2px;
+    }
+
+    .action-row .desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    button.clear-btn {
+      flex: 0 0 auto;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #fdeceb;
+      color: var(--danger);
+      border: 1px solid #f3c8c4;
+      border-radius: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.clear-btn:hover {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger-dark);
+    }
+
+    #status {
+      min-height: 14px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-align: center;
+      margin: 2px 0 0;
+      transition: opacity 0.2s;
+    }
+
+    #status.success {
+      color: var(--green);
     }
   </style>
 </head>
 <body>
-  <h3>Clear Stored Prices</h3>
-  <button id="clearPricesButton">Clear Prices</button>
-  <p id="status"></p>
+  <header>
+    <img src="icon48.png" alt="">
+    <div>
+      <h1>Rosehill Price Helper</h1>
+      <p>Settings</p>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Price Calculation</h2>
+      <div class="toggle-row">
+        <div>
+          <p class="label">Include HST in calculated price</p>
+          <p class="desc">Buyer's premium (16%) is always applied. Toggle whether the 13% HST is included too.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="includeTaxToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="formula" id="formulaPreview">$100.00 &rarr; <strong>$131.08</strong> (16% premium + 13% HST)</div>
+    </section>
+
+    <section>
+      <h2>Stored Data</h2>
+      <div class="action-row">
+        <div>
+          <p class="label">Google prices</p>
+          <p class="desc">Cached retail prices found via search</p>
+        </div>
+        <button class="clear-btn" id="clearGoogleButton">Clear</button>
+      </div>
+      <div class="action-row">
+        <div>
+          <p class="label">Custom prices</p>
+          <p class="desc">Prices you saved per lot</p>
+        </div>
+        <button class="clear-btn" id="clearCustomButton">Clear</button>
+      </div>
+    </section>
+
+    <p id="status"></p>
+  </main>
+
   <script src="popup.js"></script>
 </body>
 </html>

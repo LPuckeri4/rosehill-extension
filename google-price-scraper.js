@@ -101,28 +101,29 @@ function extractPrices() {
   // Choose the price to store
   let finalPrice = amazonPrice || finalRightPrice || null;
 
-  // Save the price with the unique model key (or mark as searched with no price)
-  chrome.storage.local.get("currentModel", (data) => {
-    const modelNumber = data.currentModel;
-    if (modelNumber) {
-      if (finalPrice !== null) {
-        chrome.storage.local.set(
-          { [modelNumber]: { googlePrice: finalPrice, searchAttempted: true } },
-          () => {
-            console.log(`Price for model ${modelNumber} saved: $${finalPrice}`);
-          }
-        );
-      } else {
-        // No price found, but mark that we attempted a search
-        chrome.storage.local.set(
-          { [modelNumber]: { googlePrice: null, searchAttempted: true } },
-          () => {
-            console.log(`No price found for model ${modelNumber}, marked as searched`);
-          }
-        );
-      }
+  // The identifier travels via URL params (set when the search tab was opened)
+  // rather than a shared storage key, so that searching multiple lots in
+  // parallel tabs can't overwrite each other's target identifier.
+  const modelNumber = new URLSearchParams(window.location.search).get("rhIdentifier");
+
+  if (modelNumber) {
+    if (finalPrice !== null) {
+      chrome.storage.local.set(
+        { [modelNumber]: { googlePrice: finalPrice, searchAttempted: true } },
+        () => {
+          console.log(`Price for model ${modelNumber} saved: $${finalPrice}`);
+        }
+      );
+    } else {
+      // No price found, but mark that we attempted a search
+      chrome.storage.local.set(
+        { [modelNumber]: { googlePrice: null, searchAttempted: true } },
+        () => {
+          console.log(`No price found for model ${modelNumber}, marked as searched`);
+        }
+      );
     }
-  });
+  }
 }
 
 // Run the price extraction function when the page loads
